@@ -10,7 +10,6 @@ const VISUAL_POSITION_SCALE = 0.32;
 const MAX_DELTA_TIME = 0.05;
 const FORCE_MIN = 1;
 const FORCE_MAX = 20;
-const CART_TARGET_LENGTH = 1.15;
 
 const simulation = {
   force: DEFAULT_FORCE,
@@ -87,60 +86,46 @@ function updateForceArrow() {
   elements.forceArrowHead.setAttribute("position", `${headX} 0 0`);
 }
 
-function normalizeCartModel() {
+function prepareCartModel() {
   const cartObject = elements.cart.getObject3D("mesh");
 
   if (!cartObject || !window.THREE) {
     return;
   }
 
-  elements.cart.setAttribute("scale", "1 1 1");
-  elements.cart.setAttribute("position", "0 0 0");
+  elements.cart.setAttribute("position", "0 0.02 0");
   elements.cart.setAttribute("rotation", "0 0 0");
-  elements.cart.setAttribute("visible", "true");
+  elements.cart.setAttribute("scale", "0.28 0.28 0.28");
 
   cartObject.updateMatrixWorld(true);
+  cartObject.traverse((child) => {
+    child.frustumCulled = false;
 
-  const firstBox = new THREE.Box3().setFromObject(cartObject);
-  const firstSize = new THREE.Vector3();
-  firstBox.getSize(firstSize);
-
-  const longestHorizontalSide = Math.max(firstSize.x, firstSize.z);
-
-  if (!Number.isFinite(longestHorizontalSide) || longestHorizontalSide === 0) {
-    elements.markerStatus.textContent = "Cart model loaded, but its size could not be measured.";
-    return;
-  }
-
-  const fittedScale = CART_TARGET_LENGTH / longestHorizontalSide;
-  elements.cart.setAttribute("scale", `${fittedScale} ${fittedScale} ${fittedScale}`);
-
-  cartObject.updateMatrixWorld(true);
-
-  const fittedBox = new THREE.Box3().setFromObject(cartObject);
-  const centerWorld = new THREE.Vector3();
-  fittedBox.getCenter(centerWorld);
-
-  const bottomCenterWorld = new THREE.Vector3(centerWorld.x, fittedBox.min.y, centerWorld.z);
-  const parentObject = elements.cart.object3D.parent;
-  const centerLocal = parentObject.worldToLocal(centerWorld.clone());
-  const bottomCenterLocal = parentObject.worldToLocal(bottomCenterWorld.clone());
-
-  // Center the GLB on the cart rig and place its lowest point on the marker plane.
-  elements.cart.setAttribute("position", {
-    x: -centerLocal.x,
-    y: -bottomCenterLocal.y,
-    z: -centerLocal.z
+    if (child.material) {
+      const materials = Array.isArray(child.material) ? child.material : [child.material];
+      materials.forEach((material) => {
+        material.side = THREE.DoubleSide;
+        material.needsUpdate = true;
+      });
+    }
   });
+
+  const box = new THREE.Box3().setFromObject(cartObject);
+  const size = new THREE.Vector3();
+  const center = new THREE.Vector3();
+  box.getSize(size);
+  box.getCenter(center);
+
   elements.cart.setAttribute("visible", "true");
   elements.fallbackCart.setAttribute("visible", "false");
 
-  elements.markerStatus.textContent = "Cart model loaded. Scan the Hiro marker to view the AR simulation.";
+  elements.markerStatus.textContent =
+    `Cart loaded: size ${size.x.toFixed(2)} x ${size.y.toFixed(2)} x ${size.z.toFixed(2)}, center ${center.x.toFixed(2)}, ${center.y.toFixed(2)}, ${center.z.toFixed(2)}.`;
 }
 
 function waitForCartModel(attempt = 0) {
   if (elements.cart.getObject3D("mesh")) {
-    normalizeCartModel();
+    prepareCartModel();
     return;
   }
 
@@ -222,7 +207,7 @@ function animationLoop(currentTime) {
 }
 
 function bindEvents() {
-  elements.cart.addEventListener("model-loaded", normalizeCartModel);
+  elements.cart.addEventListener("model-loaded", prepareCartModel);
 
   elements.cart.addEventListener("model-error", () => {
     elements.fallbackCart.setAttribute("visible", "true");
