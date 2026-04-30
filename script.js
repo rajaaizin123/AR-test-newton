@@ -9,6 +9,7 @@ const MAX_X_POSITION = 1.35;
 const MAX_DELTA_TIME = 0.05;
 const FORCE_MIN = 1;
 const FORCE_MAX = 20;
+const CART_TARGET_LENGTH = 0.9;
 
 const simulation = {
   force: DEFAULT_FORCE,
@@ -31,6 +32,7 @@ const elements = {
   playPauseButton: document.getElementById("playPauseButton"),
   resetButton: document.getElementById("resetButton"),
   markerStatus: document.getElementById("markerStatus"),
+  cart: document.getElementById("cart"),
   cartRig: document.getElementById("cartRig"),
   forceArrowShaft: document.getElementById("forceArrowShaft"),
   forceArrowHead: document.getElementById("forceArrowHead"),
@@ -80,6 +82,66 @@ function updateForceArrow() {
   });
   elements.forceArrowShaft.setAttribute("position", `${shaftCenterX} 0 0`);
   elements.forceArrowHead.setAttribute("position", `${headX} 0 0`);
+}
+
+function normalizeCartModel() {
+  const cartObject = elements.cart.getObject3D("mesh");
+
+  if (!cartObject || !window.THREE) {
+    return;
+  }
+
+  elements.cart.setAttribute("scale", "1 1 1");
+  elements.cart.setAttribute("position", "0 0 0");
+  elements.cart.setAttribute("rotation", "0 0 0");
+
+  cartObject.updateMatrixWorld(true);
+
+  const firstBox = new THREE.Box3().setFromObject(cartObject);
+  const firstSize = new THREE.Vector3();
+  firstBox.getSize(firstSize);
+
+  const longestHorizontalSide = Math.max(firstSize.x, firstSize.z);
+
+  if (!Number.isFinite(longestHorizontalSide) || longestHorizontalSide === 0) {
+    elements.markerStatus.textContent = "Cart model loaded, but its size could not be measured.";
+    return;
+  }
+
+  const fittedScale = CART_TARGET_LENGTH / longestHorizontalSide;
+  elements.cart.setAttribute("scale", `${fittedScale} ${fittedScale} ${fittedScale}`);
+
+  cartObject.updateMatrixWorld(true);
+
+  const fittedBox = new THREE.Box3().setFromObject(cartObject);
+  const centerWorld = new THREE.Vector3();
+  fittedBox.getCenter(centerWorld);
+
+  const bottomCenterWorld = new THREE.Vector3(centerWorld.x, fittedBox.min.y, centerWorld.z);
+  const parentObject = elements.cart.object3D.parent;
+  const centerLocal = parentObject.worldToLocal(centerWorld.clone());
+  const bottomCenterLocal = parentObject.worldToLocal(bottomCenterWorld.clone());
+
+  // Center the GLB on the cart rig and place its lowest point on the marker plane.
+  elements.cart.setAttribute("position", {
+    x: -centerLocal.x,
+    y: -bottomCenterLocal.y,
+    z: -centerLocal.z
+  });
+  elements.cart.setAttribute("visible", "true");
+
+  elements.markerStatus.textContent = "Cart model loaded. Scan the Hiro marker to view the AR simulation.";
+}
+
+function waitForCartModel(attempt = 0) {
+  if (elements.cart.getObject3D("mesh")) {
+    normalizeCartModel();
+    return;
+  }
+
+  if (attempt < 40) {
+    window.setTimeout(() => waitForCartModel(attempt + 1), 125);
+  }
 }
 
 function updateOutputs() {
@@ -150,6 +212,12 @@ function animationLoop(currentTime) {
 }
 
 function bindEvents() {
+  elements.cart.addEventListener("model-loaded", normalizeCartModel);
+
+  elements.cart.addEventListener("model-error", () => {
+    elements.markerStatus.textContent = "Cart model failed to load. Check assets/cart.glb and run the page from a local server.";
+  });
+
   elements.forceSlider.addEventListener("input", () => {
     simulation.force = Number(elements.forceSlider.value);
     calculateAcceleration();
@@ -184,4 +252,5 @@ function bindEvents() {
 bindEvents();
 calculateAcceleration();
 render();
+waitForCartModel();
 requestAnimationFrame(animationLoop);
