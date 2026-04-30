@@ -71,6 +71,23 @@ function updateCartPosition() {
   });
 }
 
+function setMarkerVisible(isVisible) {
+  if (simulation.markerVisible === isVisible) {
+    return;
+  }
+
+  simulation.markerVisible = isVisible;
+
+  if (isVisible) {
+    resetMotion();
+    elements.markerStatus.textContent = "Hiro marker detected. Adjust force and mass to compare acceleration.";
+    elements.markerStatus.classList.add("detected");
+  } else {
+    elements.markerStatus.textContent = "Scan the Hiro marker to view the AR simulation.";
+    elements.markerStatus.classList.remove("detected");
+  }
+}
+
 function updateForceArrow() {
   const forceRatio = (simulation.force - FORCE_MIN) / (FORCE_MAX - FORCE_MIN);
   const shaftLength = 0.2 + forceRatio * 0.75;
@@ -191,6 +208,8 @@ function animationLoop(currentTime) {
   const deltaTime = Math.min(secondsSinceLastFrame, MAX_DELTA_TIME);
   simulation.previousTime = currentTime;
 
+  setMarkerVisible(elements.hiroMarker.object3D.visible);
+
   if (!simulation.markerVisible) {
     return;
   }
@@ -234,16 +253,11 @@ function bindEvents() {
   elements.resetButton.addEventListener("click", resetSimulation);
 
   elements.hiroMarker.addEventListener("markerFound", () => {
-    simulation.markerVisible = true;
-    resetMotion();
-    elements.markerStatus.textContent = "Hiro marker detected. Adjust force and mass to compare acceleration.";
-    elements.markerStatus.classList.add("detected");
+    setMarkerVisible(true);
   });
 
   elements.hiroMarker.addEventListener("markerLost", () => {
-    simulation.markerVisible = false;
-    elements.markerStatus.textContent = "Scan the Hiro marker to view the AR simulation.";
-    elements.markerStatus.classList.remove("detected");
+    setMarkerVisible(false);
   });
 }
 
