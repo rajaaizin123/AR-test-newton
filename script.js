@@ -118,8 +118,12 @@ function prepareCartModel() {
 
   elements.cart.setAttribute("visible", "true");
 
-  elements.markerStatus.textContent =
-    `Cart loaded: size ${size.x.toFixed(2)} x ${size.y.toFixed(2)} x ${size.z.toFixed(2)}, center ${center.x.toFixed(2)}, ${center.y.toFixed(2)}, ${center.z.toFixed(2)}.`;
+  elements.cart.dataset.modelSize =
+    `${size.x.toFixed(2)} x ${size.y.toFixed(2)} x ${size.z.toFixed(2)}`;
+
+  if (!simulation.markerVisible) {
+    elements.markerStatus.textContent = "Cart model loaded. Now scan the Hiro marker.";
+  }
 }
 
 function waitForCartModel(attempt = 0) {
@@ -235,7 +239,7 @@ function bindEvents() {
   elements.hiroMarker.addEventListener("markerFound", () => {
     simulation.markerVisible = true;
     resetMotion();
-    elements.markerStatus.textContent = "Hiro marker detected. Adjust force and mass to compare acceleration.";
+    elements.markerStatus.textContent = `Hiro marker detected. Cart size: ${elements.cart.dataset.modelSize || "loaded"}.`;
     elements.markerStatus.classList.add("detected");
   });
 
