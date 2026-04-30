@@ -40,22 +40,8 @@ const elements = {
   forceArrowShaft: document.getElementById("forceArrowShaft"),
   forceArrowHead: document.getElementById("forceArrowHead"),
   cartLabel: document.getElementById("cartLabel"),
-  arScene: document.getElementById("arScene"),
   hiroMarker: document.getElementById("hiroMarker")
 };
-
-function resizeArCanvas() {
-  if (!elements.arScene || !elements.arScene.renderer || !elements.arScene.camera) {
-    return;
-  }
-
-  const width = window.innerWidth;
-  const height = window.innerHeight;
-
-  elements.arScene.renderer.setSize(width, height, false);
-  elements.arScene.camera.aspect = width / height;
-  elements.arScene.camera.updateProjectionMatrix();
-}
 
 function calculateAcceleration() {
   // Newton's Second Law: F = m x a, so acceleration is force divided by mass.
@@ -205,6 +191,8 @@ function resetSimulation() {
 function animationLoop(currentTime) {
   requestAnimationFrame(animationLoop);
 
+  render();
+
   if (!simulation.isPlaying) {
     simulation.previousTime = currentTime;
     return;
@@ -224,7 +212,6 @@ function animationLoop(currentTime) {
   }
 
   updatePhysics(deltaTime);
-  render();
 
   /*
     Optional wheel rotation:
@@ -235,11 +222,6 @@ function animationLoop(currentTime) {
 }
 
 function bindEvents() {
-  window.addEventListener("resize", resizeArCanvas);
-  window.addEventListener("orientationchange", () => {
-    window.setTimeout(resizeArCanvas, 300);
-  });
-
   elements.cart.addEventListener("model-loaded", normalizeCartModel);
 
   elements.cart.addEventListener("model-error", () => {
@@ -285,5 +267,4 @@ bindEvents();
 calculateAcceleration();
 render();
 waitForCartModel();
-resizeArCanvas();
 requestAnimationFrame(animationLoop);
