@@ -25,16 +25,18 @@ video,
 canvas.a-canvas {
   position: fixed !important;
   inset: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
 }
 
 video {
-  object-fit: cover;
+  width: 100vw !important;
+  height: 100vh !important;
+  object-fit: cover !important;
   z-index: 0;
 }
 
 canvas.a-canvas {
+  width: 100% !important;
+  height: 100% !important;
   background: transparent !important;
   z-index: 1;
 }
