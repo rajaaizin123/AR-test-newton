@@ -93,7 +93,7 @@ function prepareCartModel() {
     return;
   }
 
-  elements.cart.setAttribute("position", "0 0.05 0");
+  elements.cart.setAttribute("position", "0 -0.48 0");
   elements.cart.setAttribute("rotation", "0 0 0");
   elements.cart.setAttribute("scale", "0.45 0.45 0.45");
 
@@ -149,7 +149,6 @@ function updateOutputs() {
 }
 
 function render() {
-  updateCartPosition();
   updateForceArrow();
   updateOutputs();
 }
@@ -158,6 +157,7 @@ function resetMotion() {
   simulation.velocity = DEFAULT_VELOCITY;
   simulation.position = DEFAULT_POSITION;
   simulation.previousTime = null;
+  updateCartPosition();
 }
 
 function resetSimulation() {
@@ -196,6 +196,7 @@ function animationLoop(currentTime) {
   }
 
   updatePhysics(deltaTime);
+  updateCartPosition();
 
   /*
     Optional wheel rotation:
