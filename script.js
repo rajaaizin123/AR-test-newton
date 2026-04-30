@@ -37,7 +37,6 @@ const elements = {
   resetButton: document.getElementById("resetButton"),
   markerStatus: document.getElementById("markerStatus"),
   cart: document.getElementById("cart"),
-  fallbackCart: document.getElementById("fallbackCart"),
   cartRig: document.getElementById("cartRig"),
   forceArrowShaft: document.getElementById("forceArrowShaft"),
   forceArrowHead: document.getElementById("forceArrowHead"),
@@ -195,7 +194,6 @@ function prepareCartModel() {
   box.getCenter(center);
 
   elements.cart.setAttribute("visible", "true");
-  elements.fallbackCart.setAttribute("visible", "false");
 
   elements.markerStatus.textContent =
     `Cart loaded: size ${size.x.toFixed(2)} x ${size.y.toFixed(2)} x ${size.z.toFixed(2)}, center ${center.x.toFixed(2)}, ${center.y.toFixed(2)}, ${center.z.toFixed(2)}.`;
@@ -296,8 +294,7 @@ function bindEvents() {
   elements.cart.addEventListener("model-loaded", prepareCartModel);
 
   elements.cart.addEventListener("model-error", () => {
-    elements.fallbackCart.setAttribute("visible", "true");
-    elements.markerStatus.textContent = "Cart model failed to load. The blue fallback cart is shown. Check assets/cart.glb.";
+    elements.markerStatus.textContent = "Cart model failed to load. Check assets/cart.glb.";
   });
 
   elements.forceSlider.addEventListener("input", () => {
