@@ -5,195 +5,131 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <title>Newton's 2nd Law – WebAR</title>
+    <title>AR Simulation of Newton's Second Law</title>
 
-    <!-- A-Frame -->
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-
-    <!-- AR.js for A-Frame (marker-based) -->
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-
+    <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.8/aframe/build/aframe-ar.js"></script>
     <link rel="stylesheet" href="style.css" />
   </head>
 
   <body>
-
-    <!-- ═══════════════════════════════════════════
-         A-FRAME AR SCENE
-    ════════════════════════════════════════════ -->
     <a-scene
       id="arScene"
       embedded
-      arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
-      renderer="logarithmicDepthBuffer: true; antialias: true;"
+      renderer="antialias: true; logarithmicDepthBuffer: true;"
       vr-mode-ui="enabled: false"
+      arjs="sourceType: webcam; debugUIEnabled: false;"
     >
-
-      <!-- ── Assets ── -->
       <a-assets>
-        <!-- Cart body material -->
-        <a-mixin id="cart-body"
-          geometry="primitive: box; width: 0.6; height: 0.3; depth: 0.35"
-          material="color: #2196F3; metalness: 0.3; roughness: 0.6"
-        ></a-mixin>
+        <a-asset-item id="cartModel" src="assets/cart.glb"></a-asset-item>
       </a-assets>
 
-      <!-- ── Hiro Marker ── -->
-      <a-marker preset="hiro" id="hiroMarker">
+      <a-marker id="hiroMarker" preset="hiro">
+        <a-entity id="simulationRoot" position="0 0 0">
+          <a-plane
+            rotation="-90 0 0"
+            width="3.2"
+            height="1.4"
+            material="color: #101820; opacity: 0.34; transparent: true; side: double"
+          ></a-plane>
 
-        <!-- Ground plane (visual reference) -->
-        <a-plane
-          id="groundPlane"
-          rotation="-90 0 0"
-          width="4" height="2"
-          material="color: #1a1a2e; opacity: 0.45; transparent: true; side: double"
-        ></a-plane>
+          <a-entity id="cartRig" position="0 0.16 0">
+            <!--
+              If the model appears too large or too small, adjust the scale below.
+              If the cart faces the wrong direction, change the rotation below.
+              Example rotation values: "0 90 0", "0 -90 0", or "0 180 0".
+            -->
+            <a-entity
+              id="cart"
+              gltf-model="#cartModel"
+              position="0 0 0"
+              rotation="0 90 0"
+              scale="0.28 0.28 0.28"
+            ></a-entity>
 
-        <!-- Grid lines on ground -->
-        <a-entity id="gridLines"></a-entity>
+            <a-entity id="forceArrow" position="0.38 0.18 0">
+              <a-cylinder
+                id="forceArrowShaft"
+                radius="0.025"
+                height="0.45"
+                rotation="0 0 -90"
+                material="color: #ff5a1f; emissive: #ff5a1f; emissiveIntensity: 0.35"
+              ></a-cylinder>
+              <a-cone
+                id="forceArrowHead"
+                radius-bottom="0.075"
+                height="0.16"
+                rotation="0 0 -90"
+                material="color: #ff5a1f; emissive: #ff5a1f; emissiveIntensity: 0.35"
+              ></a-cone>
+            </a-entity>
 
-        <!-- ── Cart group (moves along X) ── -->
-        <a-entity id="cartGroup" position="0 0.2 0">
-
-          <!-- Cart body -->
-          <a-box
-            id="cartBody"
-            width="0.6" height="0.3" depth="0.35"
-            material="color: #2196F3; metalness: 0.3; roughness: 0.6"
-            position="0 0 0"
-          ></a-box>
-
-          <!-- Wheels -->
-          <a-cylinder id="wheelFL" radius="0.07" height="0.05"
-            rotation="90 0 0" position="-0.22 -0.12 0.18"
-            material="color: #333; metalness: 0.5"></a-cylinder>
-          <a-cylinder id="wheelFR" radius="0.07" height="0.05"
-            rotation="90 0 0" position="-0.22 -0.12 -0.18"
-            material="color: #333; metalness: 0.5"></a-cylinder>
-          <a-cylinder id="wheelBL" radius="0.07" height="0.05"
-            rotation="90 0 0" position="0.22 -0.12 0.18"
-            material="color: #333; metalness: 0.5"></a-cylinder>
-          <a-cylinder id="wheelBR" radius="0.07" height="0.05"
-            rotation="90 0 0" position="0.22 -0.12 -0.18"
-            material="color: #333; metalness: 0.5"></a-cylinder>
-
-          <!-- Force arrow (shaft) -->
-          <a-cylinder
-            id="arrowShaft"
-            radius="0.025" height="0.4"
-            rotation="0 0 -90"
-            position="0.5 0.05 0"
-            material="color: #FF5722; emissive: #FF5722; emissiveIntensity: 0.4"
-          ></a-cylinder>
-
-          <!-- Force arrow (head) -->
-          <a-cone
-            id="arrowHead"
-            radius-bottom="0.06" radius-top="0" height="0.12"
-            rotation="0 0 -90"
-            position="0.75 0.05 0"
-            material="color: #FF5722; emissive: #FF5722; emissiveIntensity: 0.4"
-          ></a-cone>
-
-          <!-- 3D label above cart -->
-          <a-text
-            id="cartLabel"
-            value="F=10N  m=2kg\na=5 m/s²"
-            align="center"
-            color="#FFFFFF"
-            width="2"
-            position="0 0.35 0"
-            rotation="0 0 0"
-            scale="0.5 0.5 0.5"
-          ></a-text>
-
+            <a-text
+              id="cartLabel"
+              value="F = 10 N&#10;m = 2 kg&#10;a = 5.00 m/s^2"
+              align="center"
+              color="#ffffff"
+              width="2.2"
+              position="0 0.78 0"
+              rotation="-55 0 0"
+              scale="0.7 0.7 0.7"
+            ></a-text>
+          </a-entity>
         </a-entity>
-        <!-- /cartGroup -->
-
       </a-marker>
 
-      <!-- Camera -->
       <a-entity camera></a-entity>
-
     </a-scene>
-    <!-- /a-scene -->
 
-
-    <!-- ═══════════════════════════════════════════
-         HTML UI OVERLAY
-    ════════════════════════════════════════════ -->
-    <div id="ui-overlay">
-
-      <!-- Top info bar -->
-      <div id="info-bar">
-        <span class="info-title">Newton's 2nd Law</span>
-        <span class="info-formula">F = m × a</span>
-      </div>
-
-      <!-- Live readout cards -->
-      <div id="readout-cards">
-        <div class="card" id="card-force">
-          <div class="card-value" id="display-force">10</div>
-          <div class="card-unit">N</div>
-          <div class="card-label">Force</div>
+    <main class="ui-overlay" aria-label="Newton's Second Law controls">
+      <section class="top-panel">
+        <div>
+          <p class="eyebrow">AR Simulation</p>
+          <h1>Newton's Second Law</h1>
         </div>
-        <div class="card card-accent" id="card-accel">
-          <div class="card-value" id="display-accel">5.00</div>
-          <div class="card-unit">m/s²</div>
-          <div class="card-label">Acceleration</div>
+        <div class="formula" aria-label="Formula F equals m times a">F = m x a</div>
+      </section>
+
+      <section class="readout-panel" aria-live="polite">
+        <div class="readout">
+          <span>Force</span>
+          <strong id="forceOutput">10 N</strong>
         </div>
-        <div class="card" id="card-mass">
-          <div class="card-value" id="display-mass">2</div>
-          <div class="card-unit">kg</div>
-          <div class="card-label">Mass</div>
+        <div class="readout">
+          <span>Mass</span>
+          <strong id="massOutput">2 kg</strong>
         </div>
-      </div>
-
-      <!-- Velocity readout -->
-      <div id="velocity-bar">
-        <span>Velocity: </span>
-        <span id="display-velocity">0.00</span>
-        <span> m/s</span>
-        <span id="display-position" style="margin-left:16px">Pos: 0.00 m</span>
-      </div>
-
-      <!-- Controls panel -->
-      <div id="controls-panel">
-
-        <!-- Force slider -->
-        <div class="slider-row">
-          <label for="forceSlider">
-            <span class="slider-icon">⚡</span> Force
-            <span class="slider-val" id="forceVal">10 N</span>
-          </label>
-          <input type="range" id="forceSlider" min="1" max="20" value="10" step="1" />
+        <div class="readout accent">
+          <span>Acceleration</span>
+          <strong id="accelerationOutput">5.00 m/s^2</strong>
         </div>
+      </section>
 
-        <!-- Mass slider -->
-        <div class="slider-row">
-          <label for="massSlider">
-            <span class="slider-icon">⚖️</span> Mass
-            <span class="slider-val" id="massVal">2 kg</span>
-          </label>
-          <input type="range" id="massSlider" min="1" max="10" value="2" step="1" />
+      <p id="markerStatus" class="marker-status">Scan the Hiro marker to view the AR simulation.</p>
+
+      <section class="control-panel">
+        <label class="slider-control" for="forceSlider">
+          <span class="slider-header">
+            <span>Force</span>
+            <output id="forceSliderValue">10 N</output>
+          </span>
+          <input id="forceSlider" type="range" min="1" max="20" value="10" step="1" />
+        </label>
+
+        <label class="slider-control" for="massSlider">
+          <span class="slider-header">
+            <span>Mass</span>
+            <output id="massSliderValue">2 kg</output>
+          </span>
+          <input id="massSlider" type="range" min="1" max="10" value="2" step="1" />
+        </label>
+
+        <div class="button-row">
+          <button id="playPauseButton" type="button">Pause</button>
+          <button id="resetButton" type="button" class="secondary">Reset</button>
         </div>
-
-        <!-- Action buttons -->
-        <div id="btn-row">
-          <button id="btnReset" class="btn btn-secondary">↺ Reset</button>
-          <button id="btnPause" class="btn btn-primary">⏸ Pause</button>
-        </div>
-
-      </div>
-      <!-- /controls-panel -->
-
-      <!-- Marker hint -->
-      <div id="marker-hint" class="hint-box">
-        📷 Point camera at a <strong>Hiro marker</strong> to start
-      </div>
-
-    </div>
-    <!-- /ui-overlay -->
+      </section>
+    </main>
 
     <script src="script.js"></script>
   </body>

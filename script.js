@@ -1,340 +1,187 @@
-/**
- * Newton's 2nd Law – WebAR Simulation
- * =====================================
- * F = m × a  →  a = F / m
- *
- * Physics loop runs via requestAnimationFrame.
- * A-Frame entity positions are updated each frame.
- */
+"use strict";
 
-'use strict';
+const DEFAULT_FORCE = 10;
+const DEFAULT_MASS = 2;
+const DEFAULT_VELOCITY = 0;
+const DEFAULT_POSITION = 0;
 
-// ─────────────────────────────────────────────
-// 1. PHYSICS STATE
-// ─────────────────────────────────────────────
-const physics = {
-  force:        10,     // Newtons
-  mass:         2,      // kg
-  velocity:     0,      // m/s  (along X)
-  position:     0,      // m    (along X, mapped to A-Frame units)
-  acceleration: 0,      // m/s²
-  paused:       false,
-  lastTime:     null,   // timestamp of previous frame (ms)
+const MAX_X_POSITION = 1.35;
+const MAX_DELTA_TIME = 0.05;
+const FORCE_MIN = 1;
+const FORCE_MAX = 20;
 
-  /** Clamp deltaTime to avoid huge jumps after tab switch */
-  MAX_DELTA: 0.05,      // seconds
-
-  /** World-space scale: 1 physics metre → 0.15 A-Frame units */
-  SCALE: 0.15,
-
-  /** Soft boundary: cart bounces back at ±boundary metres */
-  BOUNDARY: 1.8,
+const simulation = {
+  force: DEFAULT_FORCE,
+  mass: DEFAULT_MASS,
+  acceleration: DEFAULT_FORCE / DEFAULT_MASS,
+  velocity: DEFAULT_VELOCITY,
+  position: DEFAULT_POSITION,
+  isPlaying: true,
+  previousTime: null
 };
 
-// ─────────────────────────────────────────────
-// 2. DOM REFERENCES
-// ─────────────────────────────────────────────
-const forceSlider    = document.getElementById('forceSlider');
-const massSlider     = document.getElementById('massSlider');
-const forceVal       = document.getElementById('forceVal');
-const massVal        = document.getElementById('massVal');
-const displayForce   = document.getElementById('display-force');
-const displayMass    = document.getElementById('display-mass');
-const displayAccel   = document.getElementById('display-accel');
-const displayVel     = document.getElementById('display-velocity');
-const displayPos     = document.getElementById('display-position');
-const btnReset       = document.getElementById('btnReset');
-const btnPause       = document.getElementById('btnPause');
-const markerHint     = document.getElementById('marker-hint');
+const elements = {
+  forceSlider: document.getElementById("forceSlider"),
+  massSlider: document.getElementById("massSlider"),
+  forceSliderValue: document.getElementById("forceSliderValue"),
+  massSliderValue: document.getElementById("massSliderValue"),
+  forceOutput: document.getElementById("forceOutput"),
+  massOutput: document.getElementById("massOutput"),
+  accelerationOutput: document.getElementById("accelerationOutput"),
+  playPauseButton: document.getElementById("playPauseButton"),
+  resetButton: document.getElementById("resetButton"),
+  markerStatus: document.getElementById("markerStatus"),
+  cartRig: document.getElementById("cartRig"),
+  forceArrowShaft: document.getElementById("forceArrowShaft"),
+  forceArrowHead: document.getElementById("forceArrowHead"),
+  cartLabel: document.getElementById("cartLabel"),
+  hiroMarker: document.getElementById("hiroMarker")
+};
 
-// A-Frame entities (grabbed after DOM is ready)
-let cartGroup, arrowShaft, arrowHead, cartLabel;
-
-// ─────────────────────────────────────────────
-// 3. INITIALISE AFTER A-FRAME LOADS
-// ─────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  // Wait for A-Frame scene to be ready
-  const scene = document.getElementById('arScene');
-  scene.addEventListener('loaded', onSceneLoaded);
-
-  // Fallback: grab entities after a short delay if event already fired
-  setTimeout(grabEntities, 1500);
-});
-
-function onSceneLoaded() {
-  grabEntities();
-  buildGridLines();
-  startLoop();
+function calculateAcceleration() {
+  // Newton's Second Law: F = m x a, so acceleration is force divided by mass.
+  simulation.acceleration = simulation.force / simulation.mass;
 }
 
-function grabEntities() {
-  cartGroup  = document.getElementById('cartGroup');
-  arrowShaft = document.getElementById('arrowShaft');
-  arrowHead  = document.getElementById('arrowHead');
-  cartLabel  = document.getElementById('cartLabel');
-}
+function updatePhysics(deltaTime) {
+  calculateAcceleration();
 
-// ─────────────────────────────────────────────
-// 4. MARKER VISIBILITY FEEDBACK
-// ─────────────────────────────────────────────
-const hiroMarker = document.getElementById('hiroMarker');
+  // Velocity changes because acceleration acts over time.
+  simulation.velocity += simulation.acceleration * deltaTime;
 
-hiroMarker.addEventListener('markerFound', () => {
-  markerHint.classList.add('hidden');
-});
+  // Position changes because velocity acts over time.
+  simulation.position += simulation.velocity * deltaTime;
 
-hiroMarker.addEventListener('markerLost', () => {
-  markerHint.classList.remove('hidden');
-});
-
-// ─────────────────────────────────────────────
-// 5. SLIDER EVENT LISTENERS
-// ─────────────────────────────────────────────
-forceSlider.addEventListener('input', () => {
-  physics.force = parseFloat(forceSlider.value);
-  forceVal.textContent = physics.force + ' N';
-  displayForce.textContent = physics.force;
-  updateAccelDisplay();
-  updateArrow();
-});
-
-massSlider.addEventListener('input', () => {
-  physics.mass = parseFloat(massSlider.value);
-  massVal.textContent = physics.mass + ' kg';
-  displayMass.textContent = physics.mass;
-  updateAccelDisplay();
-  updateCartScale();
-});
-
-// ─────────────────────────────────────────────
-// 6. BUTTON HANDLERS
-// ─────────────────────────────────────────────
-btnReset.addEventListener('click', resetSimulation);
-
-btnPause.addEventListener('click', () => {
-  physics.paused = !physics.paused;
-  btnPause.textContent = physics.paused ? '▶ Play' : '⏸ Pause';
-  btnPause.classList.toggle('btn-paused', physics.paused);
-
-  if (!physics.paused) {
-    // Reset lastTime so deltaTime doesn't spike on resume
-    physics.lastTime = null;
+  // Keep the cart close to the Hiro marker so students can keep seeing it.
+  if (simulation.position > MAX_X_POSITION) {
+    simulation.position = DEFAULT_POSITION;
+    simulation.velocity = DEFAULT_VELOCITY;
   }
-});
+}
 
-// ─────────────────────────────────────────────
-// 7. RESET SIMULATION
-// ─────────────────────────────────────────────
+function updateCartPosition() {
+  elements.cartRig.setAttribute("position", {
+    x: simulation.position,
+    y: 0.16,
+    z: 0
+  });
+}
+
+function updateForceArrow() {
+  const forceRatio = (simulation.force - FORCE_MIN) / (FORCE_MAX - FORCE_MIN);
+  const shaftLength = 0.2 + forceRatio * 0.75;
+  const shaftCenterX = 0.12 + shaftLength / 2;
+  const headX = 0.12 + shaftLength + 0.09;
+
+  elements.forceArrowShaft.setAttribute("geometry", {
+    primitive: "cylinder",
+    radius: 0.025,
+    height: shaftLength
+  });
+  elements.forceArrowShaft.setAttribute("position", `${shaftCenterX} 0 0`);
+  elements.forceArrowHead.setAttribute("position", `${headX} 0 0`);
+}
+
+function updateOutputs() {
+  const accelerationText = simulation.acceleration.toFixed(2);
+
+  elements.forceSliderValue.textContent = `${simulation.force} N`;
+  elements.massSliderValue.textContent = `${simulation.mass} kg`;
+  elements.forceOutput.textContent = `${simulation.force} N`;
+  elements.massOutput.textContent = `${simulation.mass} kg`;
+  elements.accelerationOutput.textContent = `${accelerationText} m/s^2`;
+
+  elements.cartLabel.setAttribute(
+    "value",
+    `F = ${simulation.force} N\nm = ${simulation.mass} kg\na = ${accelerationText} m/s^2`
+  );
+}
+
+function render() {
+  updateCartPosition();
+  updateForceArrow();
+  updateOutputs();
+}
+
+function resetMotion() {
+  simulation.velocity = DEFAULT_VELOCITY;
+  simulation.position = DEFAULT_POSITION;
+  simulation.previousTime = null;
+}
+
 function resetSimulation() {
-  physics.velocity = 0;
-  physics.position = 0;
-  physics.lastTime = null;
+  simulation.force = DEFAULT_FORCE;
+  simulation.mass = DEFAULT_MASS;
+  resetMotion();
 
-  // Restore sliders to defaults
-  forceSlider.value = 10;
-  massSlider.value  = 2;
-  physics.force = 10;
-  physics.mass  = 2;
+  elements.forceSlider.value = DEFAULT_FORCE;
+  elements.massSlider.value = DEFAULT_MASS;
 
-  forceVal.textContent = '10 N';
-  massVal.textContent  = '2 kg';
-  displayForce.textContent = '10';
-  displayMass.textContent  = '2';
-
-  updateAccelDisplay();
-  updateArrow();
-  updateCartScale();
-  applyCartPosition();
-  updateHUD();
+  calculateAcceleration();
+  render();
 }
 
-// ─────────────────────────────────────────────
-// 8. PHYSICS LOOP
-// ─────────────────────────────────────────────
-function startLoop() {
-  requestAnimationFrame(loop);
-}
+function animationLoop(currentTime) {
+  requestAnimationFrame(animationLoop);
 
-function loop(timestamp) {
-  requestAnimationFrame(loop);
-
-  if (physics.paused) return;
-
-  // ── Delta time ──
-  if (physics.lastTime === null) {
-    physics.lastTime = timestamp;
+  if (!simulation.isPlaying) {
+    simulation.previousTime = currentTime;
     return;
   }
-  const rawDelta = (timestamp - physics.lastTime) / 1000; // seconds
-  const dt = Math.min(rawDelta, physics.MAX_DELTA);
-  physics.lastTime = timestamp;
 
-  // ── F = m·a  →  a = F/m ──
-  physics.acceleration = physics.force / physics.mass;
-
-  // ── Integrate velocity ──
-  physics.velocity += physics.acceleration * dt;
-
-  // ── Soft boundary: reverse velocity with damping ──
-  if (physics.position >= physics.BOUNDARY && physics.velocity > 0) {
-    physics.velocity *= -0.6;
-    physics.position = physics.BOUNDARY;
-  }
-  if (physics.position <= -physics.BOUNDARY && physics.velocity < 0) {
-    physics.velocity *= -0.6;
-    physics.position = -physics.BOUNDARY;
+  if (simulation.previousTime === null) {
+    simulation.previousTime = currentTime;
+    return;
   }
 
-  // ── Integrate position ──
-  physics.position += physics.velocity * dt;
+  const secondsSinceLastFrame = (currentTime - simulation.previousTime) / 1000;
+  const deltaTime = Math.min(secondsSinceLastFrame, MAX_DELTA_TIME);
+  simulation.previousTime = currentTime;
 
-  // ── Apply to scene ──
-  applyCartPosition();
-  updateHUD();
-  animateWheels(dt);
+  updatePhysics(deltaTime);
+  render();
+
+  /*
+    Optional wheel rotation:
+    If your GLB has separate wheel meshes, you can find them after the model loads
+    and rotate each wheel based on simulation.velocity. The provided app moves the
+    whole cart model because many classroom GLB assets have fixed wheels.
+  */
 }
 
-// ─────────────────────────────────────────────
-// 9. APPLY POSITION TO A-FRAME ENTITY
-// ─────────────────────────────────────────────
-function applyCartPosition() {
-  if (!cartGroup) return;
+function bindEvents() {
+  elements.forceSlider.addEventListener("input", () => {
+    simulation.force = Number(elements.forceSlider.value);
+    calculateAcceleration();
+    render();
+  });
 
-  const xAframe = physics.position * physics.SCALE;
-  const current = cartGroup.getAttribute('position');
-  cartGroup.setAttribute('position', {
-    x: xAframe,
-    y: current ? current.y : 0.2,
-    z: current ? current.z : 0,
+  elements.massSlider.addEventListener("input", () => {
+    simulation.mass = Number(elements.massSlider.value);
+    calculateAcceleration();
+    render();
+  });
+
+  elements.playPauseButton.addEventListener("click", () => {
+    simulation.isPlaying = !simulation.isPlaying;
+    elements.playPauseButton.textContent = simulation.isPlaying ? "Pause" : "Play";
+    simulation.previousTime = null;
+  });
+
+  elements.resetButton.addEventListener("click", resetSimulation);
+
+  elements.hiroMarker.addEventListener("markerFound", () => {
+    elements.markerStatus.textContent = "Hiro marker detected. Adjust force and mass to compare acceleration.";
+    elements.markerStatus.classList.add("detected");
+  });
+
+  elements.hiroMarker.addEventListener("markerLost", () => {
+    elements.markerStatus.textContent = "Scan the Hiro marker to view the AR simulation.";
+    elements.markerStatus.classList.remove("detected");
   });
 }
 
-// ─────────────────────────────────────────────
-// 10. UPDATE HUD (HTML overlay)
-// ─────────────────────────────────────────────
-function updateHUD() {
-  displayVel.textContent = physics.velocity.toFixed(2);
-  displayPos.textContent = 'Pos: ' + physics.position.toFixed(2) + ' m';
-  updateAccelDisplay();
-}
-
-function updateAccelDisplay() {
-  const a = (physics.force / physics.mass).toFixed(2);
-  displayAccel.textContent = a;
-  physics.acceleration = parseFloat(a);
-
-  // Update 3D label on cart
-  if (cartLabel) {
-    cartLabel.setAttribute('value',
-      `F=${physics.force}N  m=${physics.mass}kg\na=${a} m/s²`
-    );
-  }
-}
-
-// ─────────────────────────────────────────────
-// 11. SCALE ARROW WITH FORCE
-// ─────────────────────────────────────────────
-function updateArrow() {
-  if (!arrowShaft || !arrowHead) return;
-
-  // Shaft length scales linearly with force (range 1–20 → 0.15–0.7)
-  const minLen = 0.15, maxLen = 0.70;
-  const t = (physics.force - 1) / (20 - 1);
-  const shaftLen = minLen + t * (maxLen - minLen);
-
-  arrowShaft.setAttribute('geometry', 'height', shaftLen);
-
-  // Reposition shaft so its base stays at the cart edge
-  const shaftX = 0.3 + shaftLen / 2;
-  arrowShaft.setAttribute('position', `${shaftX} 0.05 0`);
-
-  // Arrowhead sits at the tip of the shaft
-  const headX = 0.3 + shaftLen + 0.06;
-  arrowHead.setAttribute('position', `${headX} 0.05 0`);
-}
-
-// ─────────────────────────────────────────────
-// 12. SCALE CART WITH MASS (visual feedback)
-// ─────────────────────────────────────────────
-function updateCartScale() {
-  const cartBody = document.getElementById('cartBody');
-  if (!cartBody) return;
-
-  // Mass 1–10 → scale 0.7–1.4 on Y and Z (heavier = bigger)
-  const s = 0.7 + (physics.mass - 1) / 9 * 0.7;
-  cartBody.setAttribute('scale', `1 ${s.toFixed(2)} ${s.toFixed(2)}`);
-}
-
-// ─────────────────────────────────────────────
-// 13. ANIMATE WHEELS (rotate with velocity)
-// ─────────────────────────────────────────────
-let wheelAngle = 0;
-
-function animateWheels(dt) {
-  // Wheel circumference ≈ 2π × 0.07 ≈ 0.44 A-Frame units
-  // Angular velocity (deg/s) = linear velocity / radius × (180/π)
-  const radius = 0.07;
-  const angularVel = (physics.velocity * physics.SCALE / radius) * (180 / Math.PI);
-  wheelAngle += angularVel * dt;
-
-  const ids = ['wheelFL', 'wheelFR', 'wheelBL', 'wheelBR'];
-  ids.forEach(id => {
-    const w = document.getElementById(id);
-    if (w) {
-      w.setAttribute('rotation', `90 ${wheelAngle.toFixed(1)} 0`);
-    }
-  });
-}
-
-// ─────────────────────────────────────────────
-// 14. BUILD GRID LINES ON GROUND PLANE
-// ─────────────────────────────────────────────
-function buildGridLines() {
-  const container = document.getElementById('gridLines');
-  if (!container) return;
-
-  const lineColor = '#4fc3f7';
-  const opacity   = 0.25;
-
-  // Vertical lines (along Z axis)
-  for (let x = -1.8; x <= 1.8; x += 0.4) {
-    const line = document.createElement('a-entity');
-    line.setAttribute('line', `start: ${x} 0 -1; end: ${x} 0 1; color: ${lineColor}; opacity: ${opacity}`);
-    container.appendChild(line);
-  }
-
-  // Horizontal lines (along X axis)
-  for (let z = -1; z <= 1; z += 0.4) {
-    const line = document.createElement('a-entity');
-    line.setAttribute('line', `start: -1.8 0 ${z}; end: 1.8 0 ${z}; color: ${lineColor}; opacity: ${opacity}`);
-    container.appendChild(line);
-  }
-}
-
-// ─────────────────────────────────────────────
-// 15. INITIAL STATE SETUP
-// ─────────────────────────────────────────────
-// Run once DOM is ready (before scene loads)
-window.addEventListener('load', () => {
-  updateAccelDisplay();
-  updateArrow();
-  updateCartScale();
-});
-
-// ─────────────────────────────────────────────
-// 16. SLIDER FILL (CSS custom property trick)
-// ─────────────────────────────────────────────
-// Updates the CSS --val variable so the gradient fill tracks the thumb.
-function updateSliderFill(slider) {
-  slider.style.setProperty('--val', slider.value);
-}
-
-forceSlider.addEventListener('input', () => updateSliderFill(forceSlider));
-massSlider.addEventListener('input',  () => updateSliderFill(massSlider));
-
-// Set initial fill on load
-window.addEventListener('load', () => {
-  updateSliderFill(forceSlider);
-  updateSliderFill(massSlider);
-});
+bindEvents();
+calculateAcceleration();
+render();
+requestAnimationFrame(animationLoop);
