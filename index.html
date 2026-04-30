@@ -25,7 +25,7 @@
         <a-asset-item id="cartModel" src="assets/cart.glb"></a-asset-item>
       </a-assets>
 
-      <a-marker id="hiroMarker" preset="hiro">
+      <a-marker id="hiroMarker" preset="hiro" emitevents="true" smooth="true">
         <a-entity id="simulationRoot" position="0 0 0">
           <a-entity light="type: ambient; color: #ffffff; intensity: 0.8"></a-entity>
           <a-entity light="type: directional; color: #ffffff; intensity: 0.7" position="0 1.6 1"></a-entity>
@@ -34,6 +34,7 @@
             rotation="-90 0 0"
             width="3.2"
             height="1.4"
+            visible="false"
             material="color: #101820; opacity: 0.34; transparent: true; side: double"
           ></a-plane>
           <a-entity id="cartRig" position="0 0.04 0">
@@ -44,10 +45,11 @@
             -->
             <a-entity
               id="cart"
-              gltf-model="url(assets/cart.glb)"
-              position="0 0.02 0"
+              gltf-model="#cartModel"
+              position="0 0.05 0"
               rotation="0 0 0"
-              scale="0.28 0.28 0.28"
+              scale="0.45 0.45 0.45"
+              visible="true"
             ></a-entity>
 
             <a-entity id="forceArrow" position="0.58 0.26 0">

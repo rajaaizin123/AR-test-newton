@@ -93,9 +93,9 @@ function prepareCartModel() {
     return;
   }
 
-  elements.cart.setAttribute("position", "0 0.02 0");
+  elements.cart.setAttribute("position", "0 0.05 0");
   elements.cart.setAttribute("rotation", "0 0 0");
-  elements.cart.setAttribute("scale", "0.28 0.28 0.28");
+  elements.cart.setAttribute("scale", "0.45 0.45 0.45");
 
   cartObject.updateMatrixWorld(true);
   cartObject.traverse((child) => {
