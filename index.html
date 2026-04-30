@@ -8,7 +8,7 @@
     <title>AR Simulation of Newton's Second Law</title>
 
     <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.8/aframe/build/aframe-ar.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.7/aframe/build/aframe-ar.js"></script>
     <link rel="stylesheet" href="style.css" />
   </head>
 
@@ -19,7 +19,7 @@
       renderer="alpha: true; antialias: true; logarithmicDepthBuffer: true; colorManagement: true;"
       vr-mode-ui="enabled: false"
       loading-screen="enabled: false"
-      arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false; trackingMethod: best;"
+      arjs="sourceType: webcam; debugUIEnabled: false;"
     >
       <a-assets>
         <a-asset-item id="cartModel" src="assets/cart.glb"></a-asset-item>
@@ -135,6 +135,14 @@
     </a-scene>
 
     <main class="ui-overlay" aria-label="Newton's Second Law controls">
+      <section id="cameraPermissionPanel" class="camera-permission-panel">
+        <div>
+          <strong>Camera check</strong>
+          <p id="cameraPermissionText">Checking camera permission...</p>
+        </div>
+        <button id="startCameraButton" type="button">Start Camera</button>
+      </section>
+
       <section class="top-panel">
         <div>
           <p class="eyebrow">AR Simulation</p>

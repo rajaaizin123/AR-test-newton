@@ -30,6 +30,9 @@ const elements = {
   forceOutput: document.getElementById("forceOutput"),
   massOutput: document.getElementById("massOutput"),
   accelerationOutput: document.getElementById("accelerationOutput"),
+  cameraPermissionPanel: document.getElementById("cameraPermissionPanel"),
+  cameraPermissionText: document.getElementById("cameraPermissionText"),
+  startCameraButton: document.getElementById("startCameraButton"),
   playPauseButton: document.getElementById("playPauseButton"),
   resetButton: document.getElementById("resetButton"),
   markerStatus: document.getElementById("markerStatus"),
@@ -39,8 +42,83 @@ const elements = {
   forceArrowShaft: document.getElementById("forceArrowShaft"),
   forceArrowHead: document.getElementById("forceArrowHead"),
   cartLabel: document.getElementById("cartLabel"),
+  arScene: document.getElementById("arScene"),
   hiroMarker: document.getElementById("hiroMarker")
 };
+
+function isLocalhost() {
+  return ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
+}
+
+function updateCameraPermissionMessage(message, keepPanelOpen = true) {
+  elements.cameraPermissionText.textContent = message;
+  elements.cameraPermissionPanel.classList.toggle("hidden", !keepPanelOpen);
+}
+
+async function requestCameraPermission() {
+  if (!window.isSecureContext && !isLocalhost()) {
+    updateCameraPermissionMessage(
+      "Camera is blocked because this page is not HTTPS. Use GitHub Pages HTTPS, localhost, or an HTTPS tunnel."
+    );
+    return;
+  }
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    updateCameraPermissionMessage("This browser does not expose camera access through getUserMedia.");
+    return;
+  }
+
+  try {
+    updateCameraPermissionMessage("Requesting camera permission...");
+
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: {
+        facingMode: { ideal: "environment" }
+      }
+    });
+
+    stream.getTracks().forEach((track) => track.stop());
+    updateCameraPermissionMessage("Camera permission is allowed. If AR does not start, refresh this page once.");
+  } catch (error) {
+    updateCameraPermissionMessage(`Camera permission failed: ${error.name}. Check browser site settings.`);
+  }
+}
+
+async function initializeCameraPermissionPanel() {
+  if (!window.isSecureContext && !isLocalhost()) {
+    updateCameraPermissionMessage(
+      "Camera prompt will not appear on insecure HTTP. Open this from https:// or http://localhost."
+    );
+    return;
+  }
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    updateCameraPermissionMessage("Camera API is not available in this browser.");
+    return;
+  }
+
+  if (navigator.permissions && navigator.permissions.query) {
+    try {
+      const permission = await navigator.permissions.query({ name: "camera" });
+
+      if (permission.state === "granted") {
+        updateCameraPermissionMessage("Camera permission is already allowed. Scan the Hiro marker.");
+      } else if (permission.state === "denied") {
+        updateCameraPermissionMessage("Camera permission is blocked. Open browser site settings and allow camera.");
+      } else {
+        updateCameraPermissionMessage("Tap Start Camera if the browser permission prompt does not appear automatically.");
+      }
+
+      permission.addEventListener("change", initializeCameraPermissionPanel);
+      return;
+    } catch (error) {
+      // Some browsers do not support querying camera permission by name.
+    }
+  }
+
+  updateCameraPermissionMessage("Tap Start Camera if the browser permission prompt does not appear automatically.");
+}
 
 function calculateAcceleration() {
   // Newton's Second Law: F = m x a, so acceleration is force divided by mass.
@@ -207,6 +285,14 @@ function animationLoop(currentTime) {
 }
 
 function bindEvents() {
+  elements.startCameraButton.addEventListener("click", requestCameraPermission);
+
+  elements.arScene.addEventListener("loaded", () => {
+    if (elements.cameraPermissionText.textContent === "Checking camera permission...") {
+      updateCameraPermissionMessage("A-Frame scene loaded. Waiting for camera permission...");
+    }
+  });
+
   elements.cart.addEventListener("model-loaded", prepareCartModel);
 
   elements.cart.addEventListener("model-error", () => {
@@ -249,6 +335,7 @@ function bindEvents() {
 }
 
 bindEvents();
+initializeCameraPermissionPanel();
 calculateAcceleration();
 render();
 waitForCartModel();
