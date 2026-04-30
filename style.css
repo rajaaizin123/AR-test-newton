@@ -21,26 +21,6 @@ a-scene {
   z-index: 1;
 }
 
-video,
-canvas.a-canvas {
-  position: fixed !important;
-  inset: 0 !important;
-}
-
-video {
-  width: 100vw !important;
-  height: 100vh !important;
-  object-fit: cover !important;
-  z-index: 0;
-}
-
-canvas.a-canvas {
-  width: 100% !important;
-  height: 100% !important;
-  background: transparent !important;
-  z-index: 1;
-}
-
 .ui-overlay {
   position: fixed;
   inset: 0;
