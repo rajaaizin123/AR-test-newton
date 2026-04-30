@@ -5,7 +5,7 @@ const DEFAULT_MASS = 2;
 const DEFAULT_VELOCITY = 0;
 const DEFAULT_POSITION = 0;
 
-const MAX_X_POSITION = 2.4;
+const MAX_X_POSITION = 4.0;
 const VISUAL_POSITION_SCALE = 0.48;
 const MAX_DELTA_TIME = 0.05;
 const FORCE_MIN = 1;
