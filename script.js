@@ -6,11 +6,11 @@ const DEFAULT_VELOCITY = 0;
 const DEFAULT_POSITION = 0;
 
 const MAX_X_POSITION = 1.8;
-const VISUAL_POSITION_SCALE = 0.42;
+const VISUAL_POSITION_SCALE = 0.32;
 const MAX_DELTA_TIME = 0.05;
 const FORCE_MIN = 1;
 const FORCE_MAX = 20;
-const CART_TARGET_LENGTH = 0.9;
+const CART_TARGET_LENGTH = 1.15;
 
 const simulation = {
   force: DEFAULT_FORCE,
@@ -81,7 +81,7 @@ function updatePhysics(deltaTime) {
 function updateCartPosition() {
   elements.cartRig.setAttribute("position", {
     x: simulation.position * VISUAL_POSITION_SCALE,
-    y: 0.16,
+    y: 0.04,
     z: 0
   });
 }

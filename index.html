@@ -36,16 +36,7 @@
             height="1.4"
             material="color: #101820; opacity: 0.34; transparent: true; side: double"
           ></a-plane>
-          <a-box
-            id="markerDebugBox"
-            position="0 0.04 -0.52"
-            width="0.16"
-            height="0.08"
-            depth="0.16"
-            material="color: #22c55e"
-          ></a-box>
-
-          <a-entity id="cartRig" position="0 0.16 0">
+          <a-entity id="cartRig" position="0 0.04 0">
             <!--
               If the model appears too large or too small, adjust the scale below.
               If the cart faces the wrong direction, change the rotation below.
@@ -59,7 +50,7 @@
               scale="0.25 0.25 0.25"
             ></a-entity>
 
-            <a-entity id="fallbackCart" position="0 0.12 0" visible="true">
+            <a-entity id="fallbackCart" position="0 0.12 0" visible="false">
               <a-box
                 width="0.7"
                 height="0.22"
@@ -109,7 +100,7 @@
               ></a-plane>
             </a-entity>
 
-            <a-entity id="forceArrow" position="0.38 0.18 0">
+            <a-entity id="forceArrow" position="0.58 0.26 0">
               <a-cylinder
                 id="forceArrowShaft"
                 radius="0.025"
@@ -134,7 +125,7 @@
               width="2.2"
               position="0 0.78 0"
               rotation="-55 0 0"
-              scale="0.7 0.7 0.7"
+              scale="0.62 0.62 0.62"
             ></a-text>
           </a-entity>
         </a-entity>
