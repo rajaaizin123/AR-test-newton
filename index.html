@@ -25,7 +25,7 @@
         <a-asset-item id="cartModel" src="assets/cart.glb"></a-asset-item>
       </a-assets>
 
-      <a-marker id="hiroMarker" preset="hiro" emitevents="true" smooth="true">
+      <a-marker-camera id="hiroMarker" preset="hiro" emitevents="true" smooth="true">
         <a-entity id="simulationRoot" position="0 0 0">
           <a-entity light="type: ambient; color: #ffffff; intensity: 0.8"></a-entity>
           <a-entity light="type: directional; color: #ffffff; intensity: 0.7" position="0 1.6 1"></a-entity>
@@ -81,9 +81,7 @@
             ></a-text>
           </a-entity>
         </a-entity>
-      </a-marker>
-
-      <a-entity camera></a-entity>
+      </a-marker-camera>
     </a-scene>
 
     <main class="ui-overlay" aria-label="Newton's Second Law controls">
