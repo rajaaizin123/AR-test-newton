@@ -36,6 +36,14 @@
             height="1.4"
             material="color: #101820; opacity: 0.34; transparent: true; side: double"
           ></a-plane>
+          <a-box
+            id="markerDebugBox"
+            position="0 0.04 -0.52"
+            width="0.16"
+            height="0.08"
+            depth="0.16"
+            material="color: #22c55e"
+          ></a-box>
 
           <a-entity id="cartRig" position="0 0.16 0">
             <!--
@@ -45,12 +53,61 @@
             -->
             <a-entity
               id="cart"
-              gltf-model="#cartModel"
+              gltf-model="url(assets/cart.glb)"
               position="0 0 0"
               rotation="0 0 0"
-              scale="1 1 1"
-              visible="false"
+              scale="0.25 0.25 0.25"
             ></a-entity>
+
+            <a-entity id="fallbackCart" position="0 0.12 0" visible="true">
+              <a-box
+                width="0.7"
+                height="0.22"
+                depth="0.38"
+                material="color: #2f80ed; roughness: 0.65"
+              ></a-box>
+              <a-cylinder
+                radius="0.08"
+                height="0.06"
+                rotation="90 0 0"
+                position="-0.24 -0.14 0.2"
+                material="color: #111827"
+              ></a-cylinder>
+              <a-cylinder
+                radius="0.08"
+                height="0.06"
+                rotation="90 0 0"
+                position="0.24 -0.14 0.2"
+                material="color: #111827"
+              ></a-cylinder>
+              <a-cylinder
+                radius="0.08"
+                height="0.06"
+                rotation="90 0 0"
+                position="-0.24 -0.14 -0.2"
+                material="color: #111827"
+              ></a-cylinder>
+              <a-cylinder
+                radius="0.08"
+                height="0.06"
+                rotation="90 0 0"
+                position="0.24 -0.14 -0.2"
+                material="color: #111827"
+              ></a-cylinder>
+              <a-cylinder
+                radius="0.025"
+                height="0.52"
+                position="-0.32 0.33 0"
+                material="color: #f9fafb"
+              ></a-cylinder>
+              <a-plane
+                width="0.28"
+                height="0.18"
+                position="-0.46 0.48 0"
+                rotation="0 90 0"
+                material="color: #ef4444; side: double"
+              ></a-plane>
+            </a-entity>
 
             <a-entity id="forceArrow" position="0.38 0.18 0">
               <a-cylinder

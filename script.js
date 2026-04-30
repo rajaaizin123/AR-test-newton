@@ -5,7 +5,8 @@ const DEFAULT_MASS = 2;
 const DEFAULT_VELOCITY = 0;
 const DEFAULT_POSITION = 0;
 
-const MAX_X_POSITION = 1.35;
+const MAX_X_POSITION = 1.8;
+const VISUAL_POSITION_SCALE = 0.42;
 const MAX_DELTA_TIME = 0.05;
 const FORCE_MIN = 1;
 const FORCE_MAX = 20;
@@ -18,6 +19,7 @@ const simulation = {
   velocity: DEFAULT_VELOCITY,
   position: DEFAULT_POSITION,
   isPlaying: true,
+  markerVisible: false,
   previousTime: null
 };
 
@@ -33,6 +35,7 @@ const elements = {
   resetButton: document.getElementById("resetButton"),
   markerStatus: document.getElementById("markerStatus"),
   cart: document.getElementById("cart"),
+  fallbackCart: document.getElementById("fallbackCart"),
   cartRig: document.getElementById("cartRig"),
   forceArrowShaft: document.getElementById("forceArrowShaft"),
   forceArrowHead: document.getElementById("forceArrowHead"),
@@ -63,7 +66,7 @@ function updatePhysics(deltaTime) {
 
 function updateCartPosition() {
   elements.cartRig.setAttribute("position", {
-    x: simulation.position,
+    x: simulation.position * VISUAL_POSITION_SCALE,
     y: 0.16,
     z: 0
   });
@@ -94,6 +97,7 @@ function normalizeCartModel() {
   elements.cart.setAttribute("scale", "1 1 1");
   elements.cart.setAttribute("position", "0 0 0");
   elements.cart.setAttribute("rotation", "0 0 0");
+  elements.cart.setAttribute("visible", "true");
 
   cartObject.updateMatrixWorld(true);
 
@@ -129,6 +133,7 @@ function normalizeCartModel() {
     z: -centerLocal.z
   });
   elements.cart.setAttribute("visible", "true");
+  elements.fallbackCart.setAttribute("visible", "false");
 
   elements.markerStatus.textContent = "Cart model loaded. Scan the Hiro marker to view the AR simulation.";
 }
@@ -200,6 +205,10 @@ function animationLoop(currentTime) {
   const deltaTime = Math.min(secondsSinceLastFrame, MAX_DELTA_TIME);
   simulation.previousTime = currentTime;
 
+  if (!simulation.markerVisible) {
+    return;
+  }
+
   updatePhysics(deltaTime);
   render();
 
@@ -215,7 +224,8 @@ function bindEvents() {
   elements.cart.addEventListener("model-loaded", normalizeCartModel);
 
   elements.cart.addEventListener("model-error", () => {
-    elements.markerStatus.textContent = "Cart model failed to load. Check assets/cart.glb and run the page from a local server.";
+    elements.fallbackCart.setAttribute("visible", "true");
+    elements.markerStatus.textContent = "Cart model failed to load. The blue fallback cart is shown. Check assets/cart.glb.";
   });
 
   elements.forceSlider.addEventListener("input", () => {
@@ -239,11 +249,14 @@ function bindEvents() {
   elements.resetButton.addEventListener("click", resetSimulation);
 
   elements.hiroMarker.addEventListener("markerFound", () => {
+    simulation.markerVisible = true;
+    resetMotion();
     elements.markerStatus.textContent = "Hiro marker detected. Adjust force and mass to compare acceleration.";
     elements.markerStatus.classList.add("detected");
   });
 
   elements.hiroMarker.addEventListener("markerLost", () => {
+    simulation.markerVisible = false;
     elements.markerStatus.textContent = "Scan the Hiro marker to view the AR simulation.";
     elements.markerStatus.classList.remove("detected");
   });
