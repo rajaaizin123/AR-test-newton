@@ -135,8 +135,8 @@ function prepareCartModel() {
 
   elements.cart.setAttribute("visible", "true");
 
-  elements.markerStatus.textContent =
-    `Cart loaded: size ${size.x.toFixed(2)} x ${size.y.toFixed(2)} x ${size.z.toFixed(2)}, center ${center.x.toFixed(2)}, ${center.y.toFixed(2)}, ${center.z.toFixed(2)}.`;
+  //elements.markerStatus.textContent =
+   // `Cart loaded: size ${size.x.toFixed(2)} x ${size.y.toFixed(2)} x ${size.z.toFixed(2)}, center ${center.x.toFixed(2)}, ${center.y.toFixed(2)}, ${center.z.toFixed(2)}.`;
 }
 
 function waitForCartModel(attempt = 0) {
