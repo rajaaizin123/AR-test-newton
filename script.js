@@ -80,11 +80,11 @@ function setMarkerVisible(isVisible) {
 
   if (isVisible) {
     resetMotion();
-    elements.markerStatus.textContent = "Hiro marker detected. Adjust force and mass to compare acceleration.";
-    elements.markerStatus.classList.add("detected");
+  //  elements.markerStatus.textContent = "Hiro marker detected. Adjust force and mass to compare acceleration.";
+    //elements.markerStatus.classList.add("detected");
   } else {
-    elements.markerStatus.textContent = "Scan the Hiro marker to view the AR simulation.";
-    elements.markerStatus.classList.remove("detected");
+    //elements.markerStatus.textContent = "Scan the Hiro marker to view the AR simulation.";
+   // elements.markerStatus.classList.remove("detected");
   }
 }
 
