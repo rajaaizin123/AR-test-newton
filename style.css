@@ -106,9 +106,9 @@ h1 {
 }
 
 .readout-panel {
-  width: min(100%, 300px);
+  width: min(100%, 360px);
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1px;
   overflow: hidden;
   border-radius: 6px;
@@ -142,7 +142,7 @@ h1 {
 .marker-status {
   position: fixed;
   left: 50%;
-  bottom: 122px;
+  bottom: 158px;
   transform: translateX(-50%);
   width: min(86vw, 320px);
   margin: 0;
@@ -235,6 +235,13 @@ button:active {
   }
 
   .readout strong {
-    font-size: 13px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 420px) {
+  .readout-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: min(100%, 300px);
   }
 }
