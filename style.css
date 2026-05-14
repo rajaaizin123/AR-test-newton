@@ -108,7 +108,7 @@ h1 {
 .readout-panel {
   width: min(100%, 360px);
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 1px;
   overflow: hidden;
   border-radius: 6px;
@@ -142,7 +142,7 @@ h1 {
 .marker-status {
   position: fixed;
   left: 50%;
-  bottom: 214px;
+  bottom: 250px;
   transform: translateX(-50%);
   width: min(86vw, 320px);
   margin: 0;
@@ -267,6 +267,6 @@ button:active {
   }
 
   .marker-status {
-    bottom: 218px;
+    bottom: 254px;
   }
 }

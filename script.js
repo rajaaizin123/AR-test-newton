@@ -3,6 +3,7 @@
 const DEFAULT_FORCE = 10;
 const DEFAULT_OPPOSING_FORCE = 5;
 const DEFAULT_MASS = 2;
+const DEFAULT_DIRECTION_DEG = 0;
 const DEFAULT_VELOCITY = 0;
 const DEFAULT_POSITION = 0;
 
@@ -22,9 +23,11 @@ const simulation = {
   opposingForce: DEFAULT_OPPOSING_FORCE,
   opposingForceEnabled: false,
   mass: DEFAULT_MASS,
+  directionDeg: DEFAULT_DIRECTION_DEG,
   resultForce: DEFAULT_FORCE,
   acceleration: DEFAULT_FORCE / DEFAULT_MASS,
-  velocityZ: DEFAULT_VELOCITY,
+  velocity: DEFAULT_VELOCITY,
+  positionX: DEFAULT_POSITION,
   positionZ: DEFAULT_POSITION,
   trailDistance: 0,
   isPlaying: true,
@@ -38,13 +41,16 @@ const elements = {
   opposingForceToggle: document.getElementById("opposingForceToggle"),
   opposingForceControl: document.getElementById("opposingForceControl"),
   massSlider: document.getElementById("massSlider"),
+  directionSlider: document.getElementById("directionSlider"),
   forceSliderValue: document.getElementById("forceSliderValue"),
   opposingForceSliderValue: document.getElementById("opposingForceSliderValue"),
   massSliderValue: document.getElementById("massSliderValue"),
+  directionSliderValue: document.getElementById("directionSliderValue"),
   forceOutput: document.getElementById("forceOutput"),
   opposingForceOutput: document.getElementById("opposingForceOutput"),
   resultForceOutput: document.getElementById("resultForceOutput"),
   massOutput: document.getElementById("massOutput"),
+  directionOutput: document.getElementById("directionOutput"),
   accelerationOutput: document.getElementById("accelerationOutput"),
   playPauseButton: document.getElementById("playPauseButton"),
   resetButton: document.getElementById("resetButton"),
@@ -72,19 +78,31 @@ function calculateAcceleration() {
   simulation.acceleration = simulation.resultForce / simulation.mass;
 }
 
+function getDirectionVector() {
+  const directionRad = simulation.directionDeg * Math.PI / 180;
+
+  return {
+    x: Math.sin(directionRad),
+    z: Math.cos(directionRad)
+  };
+}
+
 function updatePhysics(deltaTime) {
   calculateAcceleration();
 
-  simulation.velocityZ += simulation.acceleration * deltaTime;
-  simulation.positionZ += simulation.velocityZ * deltaTime;
+  const direction = getDirectionVector();
+
+  simulation.velocity += simulation.acceleration * deltaTime;
+  simulation.positionX += direction.x * simulation.velocity * deltaTime;
+  simulation.positionZ += direction.z * simulation.velocity * deltaTime;
 
   // Keep the cart close to the Hiro marker so students can keep seeing it.
-  if (Math.abs(simulation.positionZ) > MAX_DISTANCE_FROM_MARKER) {
+  if (Math.hypot(simulation.positionX, simulation.positionZ) > MAX_DISTANCE_FROM_MARKER) {
     resetMotion();
     return;
   }
 
-  simulation.trailDistance += Math.abs(simulation.velocityZ * deltaTime);
+  simulation.trailDistance += Math.abs(simulation.velocity * deltaTime);
   if (simulation.trailDistance >= TRAIL_POINT_INTERVAL) {
     simulation.trailDistance = 0;
     addTrailPoint();
@@ -93,10 +111,11 @@ function updatePhysics(deltaTime) {
 
 function updateCartPosition() {
   elements.cartRig.setAttribute("position", {
-    x: 0,
+    x: simulation.positionX * VISUAL_POSITION_SCALE,
     y: 0.04,
     z: simulation.positionZ * VISUAL_POSITION_SCALE
   });
+  elements.cartRig.setAttribute("rotation", `0 ${simulation.directionDeg} 0`);
 }
 
 function setMarkerVisible(isVisible) {
@@ -183,7 +202,7 @@ function addTrailPoint() {
   const point = document.createElement("a-sphere");
   point.setAttribute("radius", "0.025");
   point.setAttribute("position", {
-    x: 0,
+    x: simulation.positionX * VISUAL_POSITION_SCALE,
     y: 0.025,
     z: simulation.positionZ * VISUAL_POSITION_SCALE
   });
@@ -237,6 +256,26 @@ function formatNumber(value) {
   return Math.abs(value) < 0.005 ? "0.00" : value.toFixed(2);
 }
 
+function getDirectionName(degrees) {
+  if (degrees === 0 || degrees === 360) {
+    return "Depan";
+  }
+
+  if (degrees === 90) {
+    return "Kanan";
+  }
+
+  if (degrees === 180) {
+    return "Belakang";
+  }
+
+  if (degrees === 270) {
+    return "Kiri";
+  }
+
+  return "Miring";
+}
+
 function updateOpposingControlVisibility() {
   elements.opposingForceControl.classList.toggle("hidden", !simulation.opposingForceEnabled);
 }
@@ -244,16 +283,19 @@ function updateOpposingControlVisibility() {
 function updateOutputs() {
   const resultForceText = formatNumber(simulation.resultForce);
   const accelerationText = formatNumber(simulation.acceleration);
+  const directionText = `${simulation.directionDeg} deg ${getDirectionName(simulation.directionDeg)}`;
 
   elements.forceSliderValue.textContent = `${simulation.force} N`;
   elements.opposingForceSliderValue.textContent = `${simulation.opposingForce} N`;
   elements.massSliderValue.textContent = `${simulation.mass} kg`;
+  elements.directionSliderValue.textContent = directionText;
   elements.forceOutput.textContent = `${simulation.force} N`;
   elements.opposingForceOutput.textContent = simulation.opposingForceEnabled
     ? `${simulation.opposingForce} N`
     : "-";
   elements.massOutput.textContent = `${simulation.mass} kg`;
   elements.resultForceOutput.textContent = `${resultForceText} N`;
+  elements.directionOutput.textContent = directionText;
   elements.accelerationOutput.textContent = `${accelerationText} m/s^2`;
 
   const opposingLine = simulation.opposingForceEnabled
@@ -262,18 +304,20 @@ function updateOutputs() {
 
   elements.cartLabel.setAttribute(
     "value",
-    `m = ${simulation.mass} kg\nF1 = ${simulation.force} N${opposingLine}\nF_resultan = ${resultForceText} N\na = ${accelerationText} m/s^2`
+    `m = ${simulation.mass} kg\nF1 = ${simulation.force} N${opposingLine}\nF_resultan = ${resultForceText} N\narah = ${directionText}\na = ${accelerationText} m/s^2`
   );
 }
 
 function render() {
   calculateAcceleration();
+  updateCartPosition();
   updateVectorVisuals();
   updateOutputs();
 }
 
 function resetMotion() {
-  simulation.velocityZ = DEFAULT_VELOCITY;
+  simulation.velocity = DEFAULT_VELOCITY;
+  simulation.positionX = DEFAULT_POSITION;
   simulation.positionZ = DEFAULT_POSITION;
   simulation.trailDistance = 0;
   simulation.previousTime = null;
@@ -286,12 +330,14 @@ function resetSimulation() {
   simulation.opposingForce = DEFAULT_OPPOSING_FORCE;
   simulation.opposingForceEnabled = false;
   simulation.mass = DEFAULT_MASS;
+  simulation.directionDeg = DEFAULT_DIRECTION_DEG;
   resetMotion();
 
   elements.forceSlider.value = DEFAULT_FORCE;
   elements.opposingForceSlider.value = DEFAULT_OPPOSING_FORCE;
   elements.opposingForceToggle.checked = false;
   elements.massSlider.value = DEFAULT_MASS;
+  elements.directionSlider.value = DEFAULT_DIRECTION_DEG;
 
   updateOpposingControlVisibility();
   render();
@@ -351,6 +397,11 @@ function bindEvents() {
 
   elements.massSlider.addEventListener("input", () => {
     simulation.mass = Number(elements.massSlider.value);
+    render();
+  });
+
+  elements.directionSlider.addEventListener("input", () => {
+    simulation.directionDeg = Number(elements.directionSlider.value);
     render();
   });
 
