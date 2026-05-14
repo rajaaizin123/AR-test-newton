@@ -17,6 +17,7 @@ const TRAIL_POINT_LIMIT = 28;
 const TRAIL_POINT_INTERVAL = 0.12;
 const FORWARD_ROTATION_Y = -90;
 const BACKWARD_ROTATION_Y = 90;
+const CART_DIRECTION_OFFSET_DEG = 90;
 
 const simulation = {
   force: DEFAULT_FORCE,
@@ -116,7 +117,7 @@ function updateCartPosition() {
     z: simulation.positionZ * VISUAL_POSITION_SCALE
   });
   elements.cartRig.setAttribute("rotation", "0 0 0");
-  elements.cart.setAttribute("rotation", `0 ${simulation.directionDeg} 0`);
+  elements.cart.setAttribute("rotation", `0 ${simulation.directionDeg + CART_DIRECTION_OFFSET_DEG} 0`);
 }
 
 function setMarkerVisible(isVisible) {
