@@ -108,7 +108,7 @@ h1 {
 .readout-panel {
   width: min(100%, 360px);
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 1px;
   overflow: hidden;
   border-radius: 6px;
@@ -142,7 +142,7 @@ h1 {
 .marker-status {
   position: fixed;
   left: 50%;
-  bottom: 158px;
+  bottom: 214px;
   transform: translateX(-50%);
   width: min(86vw, 320px);
   margin: 0;
@@ -173,6 +173,27 @@ h1 {
 .slider-control {
   display: grid;
   gap: 4px;
+}
+
+.slider-control.hidden {
+  display: none;
+}
+
+.toggle-control {
+  display: flex;
+  min-height: 28px;
+  align-items: center;
+  gap: 8px;
+  color: #edf2f7;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.toggle-control input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: #ff6b35;
 }
 
 .slider-header {
@@ -243,5 +264,9 @@ button:active {
   .readout-panel {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     width: min(100%, 300px);
+  }
+
+  .marker-status {
+    bottom: 218px;
   }
 }

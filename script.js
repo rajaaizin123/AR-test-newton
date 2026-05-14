@@ -1,33 +1,30 @@
 "use strict";
 
 const DEFAULT_FORCE = 10;
+const DEFAULT_OPPOSING_FORCE = 5;
 const DEFAULT_MASS = 2;
-const DEFAULT_THETA_DEG = 0;
 const DEFAULT_VELOCITY = 0;
 const DEFAULT_POSITION = 0;
 
 const MAX_DISTANCE_FROM_MARKER = 3.4;
 const VISUAL_POSITION_SCALE = 0.42;
 const MAX_DELTA_TIME = 0.05;
-const FORCE_MIN = 1;
+const FORCE_MIN = 0;
 const FORCE_MAX = 20;
-const COMPONENT_MIN_VISIBLE_LENGTH = 0.04;
+const RESULT_FORCE_EPSILON = 0.01;
 const TRAIL_POINT_LIMIT = 28;
 const TRAIL_POINT_INTERVAL = 0.12;
+const FORWARD_ROTATION_Y = -90;
+const BACKWARD_ROTATION_Y = 90;
 
 const simulation = {
   force: DEFAULT_FORCE,
+  opposingForce: DEFAULT_OPPOSING_FORCE,
+  opposingForceEnabled: false,
   mass: DEFAULT_MASS,
-  thetaDeg: DEFAULT_THETA_DEG,
-  thetaRad: 0,
-  fx: DEFAULT_FORCE,
-  fz: 0,
-  ax: DEFAULT_FORCE / DEFAULT_MASS,
-  az: 0,
+  resultForce: DEFAULT_FORCE,
   acceleration: DEFAULT_FORCE / DEFAULT_MASS,
-  velocityX: DEFAULT_VELOCITY,
   velocityZ: DEFAULT_VELOCITY,
-  positionX: DEFAULT_POSITION,
   positionZ: DEFAULT_POSITION,
   trailDistance: 0,
   isPlaying: true,
@@ -37,18 +34,17 @@ const simulation = {
 
 const elements = {
   forceSlider: document.getElementById("forceSlider"),
+  opposingForceSlider: document.getElementById("opposingForceSlider"),
+  opposingForceToggle: document.getElementById("opposingForceToggle"),
+  opposingForceControl: document.getElementById("opposingForceControl"),
   massSlider: document.getElementById("massSlider"),
-  thetaSlider: document.getElementById("thetaSlider"),
   forceSliderValue: document.getElementById("forceSliderValue"),
+  opposingForceSliderValue: document.getElementById("opposingForceSliderValue"),
   massSliderValue: document.getElementById("massSliderValue"),
-  thetaSliderValue: document.getElementById("thetaSliderValue"),
   forceOutput: document.getElementById("forceOutput"),
+  opposingForceOutput: document.getElementById("opposingForceOutput"),
+  resultForceOutput: document.getElementById("resultForceOutput"),
   massOutput: document.getElementById("massOutput"),
-  thetaOutput: document.getElementById("thetaOutput"),
-  fxOutput: document.getElementById("fxOutput"),
-  fzOutput: document.getElementById("fzOutput"),
-  axOutput: document.getElementById("axOutput"),
-  azOutput: document.getElementById("azOutput"),
   accelerationOutput: document.getElementById("accelerationOutput"),
   playPauseButton: document.getElementById("playPauseButton"),
   resetButton: document.getElementById("resetButton"),
@@ -58,49 +54,37 @@ const elements = {
   forceArrow: document.getElementById("forceArrow"),
   forceArrowShaft: document.getElementById("forceArrowShaft"),
   forceArrowHead: document.getElementById("forceArrowHead"),
-  fxArrow: document.getElementById("fxArrow"),
-  fxArrowShaft: document.getElementById("fxArrowShaft"),
-  fxArrowHead: document.getElementById("fxArrowHead"),
-  fzArrow: document.getElementById("fzArrow"),
-  fzArrowShaft: document.getElementById("fzArrowShaft"),
-  fzArrowHead: document.getElementById("fzArrowHead"),
-  accelerationArrow: document.getElementById("accelerationArrow"),
-  accelerationArrowDash1: document.getElementById("accelerationArrowDash1"),
-  accelerationArrowDash2: document.getElementById("accelerationArrowDash2"),
-  accelerationArrowDash3: document.getElementById("accelerationArrowDash3"),
-  accelerationArrowHead: document.getElementById("accelerationArrowHead"),
+  opposingArrow: document.getElementById("opposingArrow"),
+  opposingArrowShaft: document.getElementById("opposingArrowShaft"),
+  opposingArrowHead: document.getElementById("opposingArrowHead"),
+  resultArrow: document.getElementById("resultArrow"),
+  resultArrowShaft: document.getElementById("resultArrowShaft"),
+  resultArrowHead: document.getElementById("resultArrowHead"),
   trailRoot: document.getElementById("trailRoot"),
   cartLabel: document.getElementById("cartLabel"),
-  arScene: document.getElementById("arScene"),
   hiroMarker: document.getElementById("hiroMarker")
 };
 
 function calculateAcceleration() {
-  simulation.thetaRad = simulation.thetaDeg * Math.PI / 180;
-  simulation.fx = simulation.force * Math.cos(simulation.thetaRad);
-  simulation.fz = simulation.force * Math.sin(simulation.thetaRad);
-  simulation.ax = simulation.fx / simulation.mass;
-  simulation.az = simulation.fz / simulation.mass;
-  simulation.acceleration = simulation.force / simulation.mass;
+  simulation.resultForce = simulation.opposingForceEnabled
+    ? simulation.force - simulation.opposingForce
+    : simulation.force;
+  simulation.acceleration = simulation.resultForce / simulation.mass;
 }
 
 function updatePhysics(deltaTime) {
   calculateAcceleration();
 
-  simulation.velocityX += simulation.ax * deltaTime;
-  simulation.velocityZ += simulation.az * deltaTime;
-
-  simulation.positionX += simulation.velocityX * deltaTime;
+  simulation.velocityZ += simulation.acceleration * deltaTime;
   simulation.positionZ += simulation.velocityZ * deltaTime;
 
   // Keep the cart close to the Hiro marker so students can keep seeing it.
-  const distanceFromMarker = Math.hypot(simulation.positionX, simulation.positionZ);
-  if (distanceFromMarker > MAX_DISTANCE_FROM_MARKER) {
+  if (Math.abs(simulation.positionZ) > MAX_DISTANCE_FROM_MARKER) {
     resetMotion();
     return;
   }
 
-  simulation.trailDistance += Math.hypot(simulation.velocityX * deltaTime, simulation.velocityZ * deltaTime);
+  simulation.trailDistance += Math.abs(simulation.velocityZ * deltaTime);
   if (simulation.trailDistance >= TRAIL_POINT_INTERVAL) {
     simulation.trailDistance = 0;
     addTrailPoint();
@@ -109,7 +93,7 @@ function updatePhysics(deltaTime) {
 
 function updateCartPosition() {
   elements.cartRig.setAttribute("position", {
-    x: simulation.positionX * VISUAL_POSITION_SCALE,
+    x: 0,
     y: 0.04,
     z: simulation.positionZ * VISUAL_POSITION_SCALE
   });
@@ -124,20 +108,16 @@ function setMarkerVisible(isVisible) {
 
   if (isVisible) {
     resetMotion();
-  //  elements.markerStatus.textContent = "Hiro marker detected. Adjust force and mass to compare acceleration.";
-    //elements.markerStatus.classList.add("detected");
+    elements.markerStatus.textContent = "Marker Hiro terdeteksi.";
+    elements.markerStatus.classList.add("detected");
   } else {
-    //elements.markerStatus.textContent = "Scan the Hiro marker to view the AR simulation.";
-   // elements.markerStatus.classList.remove("detected");
+    elements.markerStatus.textContent = "Scan marker Hiro untuk mulai.";
+    elements.markerStatus.classList.remove("detected");
   }
 }
 
-function updateForceArrow() {
-  const forceRatio = (simulation.force - FORCE_MIN) / (FORCE_MAX - FORCE_MIN);
-  const shaftLength = 0.24 + forceRatio * 0.82;
-
-  updateSolidArrow(elements.forceArrowShaft, elements.forceArrowHead, shaftLength, 0.11, 0.025);
-  elements.forceArrow.setAttribute("rotation", `0 ${-simulation.thetaDeg} 0`);
+function getForceRatio(value) {
+  return Math.min(Math.max(value / FORCE_MAX, 0), 1);
 }
 
 function updateSolidArrow(shaftElement, headElement, shaftLength, startOffset, radius) {
@@ -153,45 +133,44 @@ function updateSolidArrow(shaftElement, headElement, shaftLength, startOffset, r
   headElement.setAttribute("position", `${headX} 0 0`);
 }
 
-function updateComponentArrow(groupElement, shaftElement, headElement, value, positiveRotation, negativeRotation) {
-  const magnitudeRatio = Math.min(Math.abs(value) / FORCE_MAX, 1);
-  const shaftLength = value === 0 ? COMPONENT_MIN_VISIBLE_LENGTH : 0.1 + magnitudeRatio * 0.62;
+function updateForceArrow() {
+  const shaftLength = 0.24 + getForceRatio(simulation.force) * 0.82;
 
-  updateSolidArrow(shaftElement, headElement, shaftLength, 0.07, 0.014);
-  groupElement.setAttribute("rotation", `0 ${value >= 0 ? positiveRotation : negativeRotation} 0`);
-  groupElement.setAttribute("visible", Math.abs(value) > 0.01);
+  updateSolidArrow(elements.forceArrowShaft, elements.forceArrowHead, shaftLength, 0.11, 0.025);
+  elements.forceArrow.setAttribute("rotation", `0 ${FORWARD_ROTATION_Y} 0`);
 }
 
-function updateAccelerationArrow() {
-  const forceRatio = (simulation.force - FORCE_MIN) / (FORCE_MAX - FORCE_MIN);
-  const dashLength = 0.1 + forceRatio * 0.08;
-  const gap = 0.08;
-  const startOffset = 0.1;
-  const dashes = [
-    elements.accelerationArrowDash1,
-    elements.accelerationArrowDash2,
-    elements.accelerationArrowDash3
-  ];
+function updateOpposingArrow() {
+  elements.opposingArrow.setAttribute("visible", simulation.opposingForceEnabled);
 
-  dashes.forEach((dash, index) => {
-    dash.setAttribute("geometry", {
-      primitive: "cylinder",
-      radius: 0.011,
-      height: dashLength
-    });
-    dash.setAttribute("position", `${startOffset + index * (dashLength + gap) + dashLength / 2} 0 0`);
-  });
+  if (!simulation.opposingForceEnabled) {
+    return;
+  }
 
-  const headX = startOffset + dashes.length * dashLength + (dashes.length - 1) * gap + 0.06;
-  elements.accelerationArrowHead.setAttribute("position", `${headX} 0 0`);
-  elements.accelerationArrow.setAttribute("rotation", `0 ${-simulation.thetaDeg} 0`);
+  const shaftLength = 0.16 + getForceRatio(simulation.opposingForce) * 0.72;
+  updateSolidArrow(elements.opposingArrowShaft, elements.opposingArrowHead, shaftLength, 0.07, 0.014);
+  elements.opposingArrow.setAttribute("rotation", `0 ${BACKWARD_ROTATION_Y} 0`);
+}
+
+function updateResultArrow() {
+  if (Math.abs(simulation.resultForce) <= RESULT_FORCE_EPSILON) {
+    elements.resultArrow.setAttribute("visible", false);
+    return;
+  }
+
+  const shaftLength = 0.12 + getForceRatio(Math.abs(simulation.resultForce)) * 0.78;
+  updateSolidArrow(elements.resultArrowShaft, elements.resultArrowHead, shaftLength, 0.08, 0.018);
+  elements.resultArrow.setAttribute("visible", true);
+  elements.resultArrow.setAttribute(
+    "rotation",
+    `0 ${simulation.resultForce > 0 ? FORWARD_ROTATION_Y : BACKWARD_ROTATION_Y} 0`
+  );
 }
 
 function updateVectorVisuals() {
   updateForceArrow();
-  updateComponentArrow(elements.fxArrow, elements.fxArrowShaft, elements.fxArrowHead, simulation.fx, 0, 180);
-  updateComponentArrow(elements.fzArrow, elements.fzArrowShaft, elements.fzArrowHead, simulation.fz, -90, 90);
-  updateAccelerationArrow();
+  updateOpposingArrow();
+  updateResultArrow();
 }
 
 function clearTrail() {
@@ -204,7 +183,7 @@ function addTrailPoint() {
   const point = document.createElement("a-sphere");
   point.setAttribute("radius", "0.025");
   point.setAttribute("position", {
-    x: simulation.positionX * VISUAL_POSITION_SCALE,
+    x: 0,
     y: 0.025,
     z: simulation.positionZ * VISUAL_POSITION_SCALE
   });
@@ -240,16 +219,7 @@ function prepareCartModel() {
     }
   });
 
-  const box = new THREE.Box3().setFromObject(cartObject);
-  const size = new THREE.Vector3();
-  const center = new THREE.Vector3();
-  box.getSize(size);
-  box.getCenter(center);
-
   elements.cart.setAttribute("visible", "true");
-
-  //elements.markerStatus.textContent =
-   // `Cart loaded: size ${size.x.toFixed(2)} x ${size.y.toFixed(2)} x ${size.z.toFixed(2)}, center ${center.x.toFixed(2)}, ${center.y.toFixed(2)}, ${center.z.toFixed(2)}.`;
 }
 
 function waitForCartModel(attempt = 0) {
@@ -267,40 +237,43 @@ function formatNumber(value) {
   return Math.abs(value) < 0.005 ? "0.00" : value.toFixed(2);
 }
 
+function updateOpposingControlVisibility() {
+  elements.opposingForceControl.classList.toggle("hidden", !simulation.opposingForceEnabled);
+}
+
 function updateOutputs() {
-  const accelerationText = simulation.acceleration.toFixed(2);
-  const fxText = formatNumber(simulation.fx);
-  const fzText = formatNumber(simulation.fz);
-  const axText = formatNumber(simulation.ax);
-  const azText = formatNumber(simulation.az);
+  const resultForceText = formatNumber(simulation.resultForce);
+  const accelerationText = formatNumber(simulation.acceleration);
 
   elements.forceSliderValue.textContent = `${simulation.force} N`;
+  elements.opposingForceSliderValue.textContent = `${simulation.opposingForce} N`;
   elements.massSliderValue.textContent = `${simulation.mass} kg`;
-  elements.thetaSliderValue.textContent = `${simulation.thetaDeg}${String.fromCharCode(176)}`;
   elements.forceOutput.textContent = `${simulation.force} N`;
+  elements.opposingForceOutput.textContent = simulation.opposingForceEnabled
+    ? `${simulation.opposingForce} N`
+    : "-";
   elements.massOutput.textContent = `${simulation.mass} kg`;
-  elements.thetaOutput.textContent = `${simulation.thetaDeg}${String.fromCharCode(176)}`;
-  elements.fxOutput.textContent = `${fxText} N`;
-  elements.fzOutput.textContent = `${fzText} N`;
-  elements.axOutput.textContent = `${axText} m/s^2`;
-  elements.azOutput.textContent = `${azText} m/s^2`;
+  elements.resultForceOutput.textContent = `${resultForceText} N`;
   elements.accelerationOutput.textContent = `${accelerationText} m/s^2`;
+
+  const opposingLine = simulation.opposingForceEnabled
+    ? `\nF2 = ${simulation.opposingForce} N`
+    : "";
 
   elements.cartLabel.setAttribute(
     "value",
-    `F = ${simulation.force} N\nm = ${simulation.mass} kg\ntheta = ${simulation.thetaDeg} deg\nFx = ${fxText} N, Fz = ${fzText} N\na = ${accelerationText} m/s^2`
+    `m = ${simulation.mass} kg\nF1 = ${simulation.force} N${opposingLine}\nF_resultan = ${resultForceText} N\na = ${accelerationText} m/s^2`
   );
 }
 
 function render() {
+  calculateAcceleration();
   updateVectorVisuals();
   updateOutputs();
 }
 
 function resetMotion() {
-  simulation.velocityX = DEFAULT_VELOCITY;
   simulation.velocityZ = DEFAULT_VELOCITY;
-  simulation.positionX = DEFAULT_POSITION;
   simulation.positionZ = DEFAULT_POSITION;
   simulation.trailDistance = 0;
   simulation.previousTime = null;
@@ -310,15 +283,17 @@ function resetMotion() {
 
 function resetSimulation() {
   simulation.force = DEFAULT_FORCE;
+  simulation.opposingForce = DEFAULT_OPPOSING_FORCE;
+  simulation.opposingForceEnabled = false;
   simulation.mass = DEFAULT_MASS;
-  simulation.thetaDeg = DEFAULT_THETA_DEG;
   resetMotion();
 
   elements.forceSlider.value = DEFAULT_FORCE;
+  elements.opposingForceSlider.value = DEFAULT_OPPOSING_FORCE;
+  elements.opposingForceToggle.checked = false;
   elements.massSlider.value = DEFAULT_MASS;
-  elements.thetaSlider.value = DEFAULT_THETA_DEG;
 
-  calculateAcceleration();
+  updateOpposingControlVisibility();
   render();
 }
 
@@ -349,37 +324,33 @@ function animationLoop(currentTime) {
 
   updatePhysics(deltaTime);
   updateCartPosition();
-
-  /*
-    Optional wheel rotation:
-    If your GLB has separate wheel meshes, you can find them after the model loads
-    and rotate each wheel based on simulation.velocity. The provided app moves the
-    whole cart model because many classroom GLB assets have fixed wheels.
-  */
 }
 
 function bindEvents() {
   elements.cart.addEventListener("model-loaded", prepareCartModel);
 
   elements.cart.addEventListener("model-error", () => {
-    elements.markerStatus.textContent = "Cart model failed to load. Check assets/cart.glb.";
+    elements.markerStatus.textContent = "Model gerobak gagal dimuat. Periksa file assets/tes2.glb.";
   });
 
   elements.forceSlider.addEventListener("input", () => {
     simulation.force = Number(elements.forceSlider.value);
-    calculateAcceleration();
+    render();
+  });
+
+  elements.opposingForceSlider.addEventListener("input", () => {
+    simulation.opposingForce = Number(elements.opposingForceSlider.value);
+    render();
+  });
+
+  elements.opposingForceToggle.addEventListener("change", () => {
+    simulation.opposingForceEnabled = elements.opposingForceToggle.checked;
+    updateOpposingControlVisibility();
     render();
   });
 
   elements.massSlider.addEventListener("input", () => {
     simulation.mass = Number(elements.massSlider.value);
-    calculateAcceleration();
-    render();
-  });
-
-  elements.thetaSlider.addEventListener("input", () => {
-    simulation.thetaDeg = Number(elements.thetaSlider.value);
-    calculateAcceleration();
     render();
   });
 
@@ -402,6 +373,7 @@ function bindEvents() {
 
 bindEvents();
 calculateAcceleration();
+updateOpposingControlVisibility();
 render();
 waitForCartModel();
 requestAnimationFrame(animationLoop);

@@ -71,33 +71,16 @@
               ></a-cone>
             </a-entity>
 
-            <a-entity id="fxArrow" position="0 0.18 0">
+            <a-entity id="opposingArrow" position="0 0.18 0" visible="false">
               <a-cylinder
-                id="fxArrowShaft"
-                radius="0.014"
-                height="0.35"
-                rotation="0 0 -90"
-                material="color: #ffd166; emissive: #ffd166; emissiveIntensity: 0.25"
-              ></a-cylinder>
-              <a-cone
-                id="fxArrowHead"
-                radius-bottom="0.045"
-                height="0.1"
-                rotation="0 0 -90"
-                material="color: #ffd166; emissive: #ffd166; emissiveIntensity: 0.25"
-              ></a-cone>
-            </a-entity>
-
-            <a-entity id="fzArrow" position="0 0.16 0">
-              <a-cylinder
-                id="fzArrowShaft"
+                id="opposingArrowShaft"
                 radius="0.014"
                 height="0.35"
                 rotation="0 0 -90"
                 material="color: #74d2ff; emissive: #74d2ff; emissiveIntensity: 0.25"
               ></a-cylinder>
               <a-cone
-                id="fzArrowHead"
+                id="opposingArrowHead"
                 radius-bottom="0.045"
                 height="0.1"
                 rotation="0 0 -90"
@@ -105,32 +88,18 @@
               ></a-cone>
             </a-entity>
 
-            <a-entity id="accelerationArrow" position="0 0.4 0">
+            <a-entity id="resultArrow" position="0 0.4 0">
               <a-cylinder
-                id="accelerationArrowDash1"
-                radius="0.011"
-                height="0.16"
-                rotation="0 0 -90"
-                material="color: #64ffda; emissive: #64ffda; emissiveIntensity: 0.35"
-              ></a-cylinder>
-              <a-cylinder
-                id="accelerationArrowDash2"
-                radius="0.011"
-                height="0.16"
-                rotation="0 0 -90"
-                material="color: #64ffda; emissive: #64ffda; emissiveIntensity: 0.35"
-              ></a-cylinder>
-              <a-cylinder
-                id="accelerationArrowDash3"
-                radius="0.011"
-                height="0.16"
+                id="resultArrowShaft"
+                radius="0.018"
+                height="0.35"
                 rotation="0 0 -90"
                 material="color: #64ffda; emissive: #64ffda; emissiveIntensity: 0.35"
               ></a-cylinder>
               <a-cone
-                id="accelerationArrowHead"
-                radius-bottom="0.045"
-                height="0.1"
+                id="resultArrowHead"
+                radius-bottom="0.058"
+                height="0.13"
                 rotation="0 0 -90"
                 material="color: #64ffda; emissive: #64ffda; emissiveIntensity: 0.35"
               ></a-cone>
@@ -138,7 +107,7 @@
 
             <a-text
               id="cartLabel"
-              value="F = 10 N&#10;m = 2 kg&#10;theta = 0 deg&#10;a = 5.00 m/s^2"
+              value="m = 2 kg&#10;F1 = 10 N&#10;F_resultan = 10.00 N&#10;a = 5.00 m/s^2"
               align="center"
               color="#ffffff"
               width="2.2"
@@ -154,18 +123,9 @@
     </a-scene>
 
     <main class="ui-overlay" aria-label="Newton's Second Law controls">
-      <!-- <section class="top-panel">
-        <div>
-          <p class="eyebrow">AR Simulation: Hukum 2 Newton</p>
-          <h1>Newton's Second Law</h1>
-        </div>
-        <div class="formula" aria-label="Formula F equals m times a">F = m x a</div>
-      </section>
-       -->
- 
       <section class="readout-panel" aria-live="polite">
         <div class="readout">
-          <span>Force</span>
+          <span>F1</span>
           <strong id="forceOutput">10 N</strong>
         </div>
         <div class="readout">
@@ -173,27 +133,15 @@
           <strong id="massOutput">2 kg</strong>
         </div>
         <div class="readout">
-          <span>Angle</span>
-          <strong id="thetaOutput">0°</strong>
+          <span>F2</span>
+          <strong id="opposingForceOutput">-</strong>
         </div>
         <div class="readout">
-          <span>Fx</span>
-          <strong id="fxOutput">10.00 N</strong>
-        </div>
-        <div class="readout">
-          <span>Fz</span>
-          <strong id="fzOutput">0.00 N</strong>
-        </div>
-        <div class="readout">
-          <span>ax</span>
-          <strong id="axOutput">5.00 m/s^2</strong>
-        </div>
-        <div class="readout">
-          <span>az</span>
-          <strong id="azOutput">0.00 m/s^2</strong>
+          <span>F resultan</span>
+          <strong id="resultForceOutput">10.00 N</strong>
         </div>
         <div class="readout accent">
-          <span>aTotal</span>
+          <span>a</span>
           <strong id="accelerationOutput">5.00 m/s^2</strong>
         </div>
       </section>
@@ -203,7 +151,7 @@
       <section class="control-panel">
         <label class="slider-control" for="forceSlider">
           <span class="slider-header">
-            <span>Force</span>
+            <span>Gaya utama F1</span>
             <output id="forceSliderValue">10 N</output>
           </span>
           <input id="forceSlider" type="range" min="1" max="20" value="10" step="1" />
@@ -217,12 +165,17 @@
           <input id="massSlider" type="range" min="1" max="10" value="2" step="1" />
         </label>
 
-        <label class="slider-control" for="thetaSlider">
+        <label class="toggle-control" for="opposingForceToggle">
+          <input id="opposingForceToggle" type="checkbox" />
+          <span>Aktifkan Gaya Lawan</span>
+        </label>
+
+        <label id="opposingForceControl" class="slider-control hidden" for="opposingForceSlider">
           <span class="slider-header">
-            <span>Angle theta</span>
-            <output id="thetaSliderValue">0°</output>
+            <span>Gaya lawan F2</span>
+            <output id="opposingForceSliderValue">5 N</output>
           </span>
-          <input id="thetaSlider" type="range" min="0" max="360" value="0" step="1" />
+          <input id="opposingForceSlider" type="range" min="0" max="20" value="5" step="1" />
         </label>
 
         <div class="button-row">
