@@ -3,7 +3,7 @@
 const DEFAULT_FORCE = 10;
 const DEFAULT_OPPOSING_FORCE = 5;
 const DEFAULT_MASS = 2;
-const DEFAULT_DIRECTION_DEG = 0;
+const DEFAULT_DIRECTION_DEG = 90;
 const DEFAULT_VELOCITY = 0;
 const DEFAULT_POSITION = 0;
 
@@ -115,7 +115,8 @@ function updateCartPosition() {
     y: 0.04,
     z: simulation.positionZ * VISUAL_POSITION_SCALE
   });
-  elements.cartRig.setAttribute("rotation", `0 ${simulation.directionDeg} 0`);
+  elements.cartRig.setAttribute("rotation", "0 0 0");
+  elements.cart.setAttribute("rotation", `0 ${simulation.directionDeg} 0`);
 }
 
 function setMarkerVisible(isVisible) {
@@ -156,7 +157,7 @@ function updateForceArrow() {
   const shaftLength = 0.24 + getForceRatio(simulation.force) * 0.82;
 
   updateSolidArrow(elements.forceArrowShaft, elements.forceArrowHead, shaftLength, 0.11, 0.025);
-  elements.forceArrow.setAttribute("rotation", `0 ${FORWARD_ROTATION_Y} 0`);
+  elements.forceArrow.setAttribute("rotation", `0 ${simulation.directionDeg + FORWARD_ROTATION_Y} 0`);
 }
 
 function updateOpposingArrow() {
@@ -168,7 +169,7 @@ function updateOpposingArrow() {
 
   const shaftLength = 0.16 + getForceRatio(simulation.opposingForce) * 0.72;
   updateSolidArrow(elements.opposingArrowShaft, elements.opposingArrowHead, shaftLength, 0.07, 0.014);
-  elements.opposingArrow.setAttribute("rotation", `0 ${BACKWARD_ROTATION_Y} 0`);
+  elements.opposingArrow.setAttribute("rotation", `0 ${simulation.directionDeg + BACKWARD_ROTATION_Y} 0`);
 }
 
 function updateResultArrow() {
@@ -182,7 +183,7 @@ function updateResultArrow() {
   elements.resultArrow.setAttribute("visible", true);
   elements.resultArrow.setAttribute(
     "rotation",
-    `0 ${simulation.resultForce > 0 ? FORWARD_ROTATION_Y : BACKWARD_ROTATION_Y} 0`
+    `0 ${simulation.directionDeg + (simulation.resultForce > 0 ? FORWARD_ROTATION_Y : BACKWARD_ROTATION_Y)} 0`
   );
 }
 
