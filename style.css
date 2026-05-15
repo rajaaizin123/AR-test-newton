@@ -59,7 +59,7 @@ video {
 .top-panel,
 .readout-panel,
 .control-panel {
-  width: min(100%, 340px);
+  width: min(100%, 290px);
   margin-inline: auto;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(9, 14, 24, 0.68);
